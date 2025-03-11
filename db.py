@@ -325,15 +325,15 @@ def get_user_orders(user_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	cur.execute("""
-		SELECT id, status, total_price, created_at
+		SELECT id, status, total_price, delivery_address, created_at
 		FROM orders
 		WHERE user_id = %s
 		ORDER BY created_at DESC
 	""", (user_id,))
-	result = cur.fetchall()
+	orders = cur.fetchall()
 	cur.close()
 	conn.close()
-	return result
+	return orders
 
 def get_all_orders():
 	conn = get_db_connection()
