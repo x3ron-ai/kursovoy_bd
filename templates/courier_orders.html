@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 	<h1>Courier Orders</h1>
-	
+
 	<div class="section">
 		<h2>Active Orders</h2>
 		<table>
@@ -23,7 +23,7 @@
 				<td>{{ order[4] or 'N/A' }}</td>
 				<td>{{ order[5] or 'N/A' }}</td>
 				<td>
-					<form method="POST">
+					<form method="POST" style="display: inline;">
 						<input type="hidden" name="action" value="update_status">
 						<input type="hidden" name="order_id" value="{{ order[0] }}">
 						<select name="new_status">
@@ -32,12 +32,17 @@
 						</select>
 						<button type="submit">Update</button>
 					</form>
+					<form method="POST" style="display: inline;">
+						<input type="hidden" name="action" value="cancel">
+						<input type="hidden" name="order_id" value="{{ order[0] }}">
+						<button type="submit" style="background-color: #f44336;">Cancel</button>
+					</form>
 				</td>
 			</tr>
 			{% endfor %}
 		</table>
 	</div>
-	
+
 	<div class="section">
 		<h2>Available Orders</h2>
 		<table>
@@ -54,14 +59,14 @@
 				<td>{{ order[1] }}</td>
 				<td>{{ order[2] }}</td>
 				<td>
-					<input type="datetime-local" name="estimated_delivery" required>
-				</td>
-				<td>
-					<form method="POST">
+					<form method="POST" id="form-{{ order[0] }}" style="margin: 0;">
 						<input type="hidden" name="action" value="assign">
 						<input type="hidden" name="order_id" value="{{ order[0] }}">
-						<button type="submit">Take Order</button>
+						<input type="datetime-local" name="estimated_delivery" required style="width: 100%;">
 					</form>
+				</td>
+				<td>
+					<button type="submit" form="form-{{ order[0] }}">Take Order</button>
 				</td>
 			</tr>
 			{% endfor %}

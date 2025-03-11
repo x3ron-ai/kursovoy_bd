@@ -13,7 +13,8 @@ from db import (
 	get_user_orders, get_all_orders, get_seller_orders, create_order,
 	add_order_item, update_product_quantity, get_cart_for_checkout,
 	get_active_courier_orders, get_available_orders, assign_order_to_courier,
-	update_delivery_status, check_courier_assignment, update_order_status
+	update_delivery_status, check_courier_assignment, update_order_status,
+	update_user_address
 )
 
 app = Flask(__name__)
@@ -40,7 +41,6 @@ def login_required(role=None):
 		return wrapper
 	return decorator
 
-# Главная страница с товарами
 @app.route('/', methods=['GET', 'POST'])
 @login_required()
 def index():
@@ -59,10 +59,9 @@ def index():
 			flash(f'Error adding to cart: {str(e)}')
 	
 	products = get_all_products()
-	name, role = get_user_info(session['user_id'])
+	name, role, default_address = get_user_info(session['user_id'])
 	return render_template('index.html', products=products, name=name, role=role)
 
-# Регистрация
 @app.route('/register', methods=['GET', 'POST'])
 def register():
 	if request.method == 'POST':
@@ -96,7 +95,6 @@ def register():
 	
 	return render_template('register.html')
 
-# Авторизация
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 	if request.method == 'POST':
@@ -127,7 +125,6 @@ def login():
 	
 	return render_template('login.html')
 
-# Выход
 @app.route('/logout')
 @login_required()
 def logout():
@@ -141,7 +138,6 @@ def logout():
 	flash('You have been logged out')
 	return redirect(url_for('login'))
 
-# Профиль покупателя
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required('customer')
 def customer_profile():
@@ -164,7 +160,15 @@ def customer_profile():
 					return redirect(url_for('customer_profile'))
 				
 				total_price = sum(item[1] * item[2] for item in cart_items)
-				order_id = create_order(session['user_id'], total_price)
+				delivery_address = request.form.get('delivery_address')
+				name, role, default_address = get_user_info(session['user_id'])
+				if not delivery_address and default_address:
+					delivery_address = default_address
+				elif not delivery_address:
+					flash('Please provide a delivery address or set a default address')
+					return redirect(url_for('customer_profile'))
+				
+				order_id = create_order(session['user_id'], total_price, delivery_address)
 				
 				for item in cart_items:
 					product_id, quantity, price = item
@@ -185,25 +189,31 @@ def customer_profile():
 				flash('Order marked as paid')
 			except Exception as e:
 				flash(f'Error marking order as paid: {str(e)}')
+		
+		elif action == 'update_address':
+			default_address = request.form.get('default_address')
+			try:
+				update_user_address(session['user_id'], default_address)
+				flash('Default address updated successfully')
+			except Exception as e:
+				flash(f'Error updating address: {str(e)}')
 	
 	cart_items = get_cart_items(session['user_id'])
 	orders = get_user_orders(session['user_id'])
-	return render_template('customer_profile.html', cart_items=cart_items, orders=orders)
+	name, role, default_address = get_user_info(session['user_id'])
+	return render_template('customer_profile.html', cart_items=cart_items, orders=orders, default_address=default_address)
 
-# Admin: Панель
 @app.route('/admin')
 @login_required('admin')
 def admin_panel():
 	return render_template('admin_panel.html')
 
-# Admin: Пользователи
 @app.route('/admin/users')
 @login_required('admin')
 def admin_users():
 	users = get_all_users()
 	return render_template('admin_users.html', users=users)
 
-# Admin: Товары
 @app.route('/admin/products', methods=['GET', 'POST'])
 @login_required('admin')
 def admin_products():
@@ -264,14 +274,12 @@ def admin_products():
 	products = get_all_products_with_seller()
 	return render_template('admin_products.html', products=products)
 
-# Admin: Заказы
 @app.route('/admin/orders')
 @login_required('admin')
 def admin_orders():
 	orders = get_all_orders()
 	return render_template('admin_orders.html', orders=orders)
 
-# Seller: Профиль
 @app.route('/seller', methods=['GET', 'POST'])
 @login_required('seller')
 def seller_profile():
@@ -342,14 +350,12 @@ def seller_profile():
 	products = get_products_by_seller(session['user_id'])
 	return render_template('seller_profile.html', products=products)
 
-# Seller: Заказы
 @app.route('/seller/orders')
 @login_required('seller')
 def seller_orders():
 	orders = get_seller_orders(session['user_id'])
 	return render_template('seller_orders.html', orders=orders)
 
-# Courier: Заказы
 @app.route('/courier', methods=['GET', 'POST'])
 @login_required('courier')
 def courier_orders():
@@ -359,6 +365,9 @@ def courier_orders():
 		if action == 'assign':
 			order_id = request.form.get('order_id')
 			estimated_delivery_str = request.form.get('estimated_delivery')
+			if not estimated_delivery_str:  # Добавлена проверка на None или пустую строку
+				flash('Please provide an estimated delivery time')
+				return redirect(url_for('courier_orders'))
 			try:
 				estimated_delivery = datetime.strptime(estimated_delivery_str, '%Y-%m-%dT%H:%M')
 				if estimated_delivery < datetime.now():
@@ -389,10 +398,24 @@ def courier_orders():
 				flash(f'Delivery status updated to {new_status}')
 			except Exception as e:
 				flash(f'Error updating status: {str(e)}')
+		
+		elif action == 'cancel':
+			order_id = request.form.get('order_id')
+			if not check_courier_assignment(order_id, session['user_id']):
+				flash('You can only cancel your own deliveries')
+				return redirect(url_for('courier_orders'))
+			
+			try:
+				cancel_delivery(order_id, session['user_id'])
+				log_action(session['user_id'], f'Delivery for order {order_id} cancelled')
+				flash('Delivery cancelled successfully')
+			except Exception as e:
+				flash(f'Error cancelling delivery: {str(e)}')
 	
 	active_orders = get_active_courier_orders(session['user_id'])
 	available_orders = get_available_orders()
 	return render_template('courier_orders.html', active_orders=active_orders, available_orders=available_orders)
+
 if __name__ == '__main__':
 	if not os.path.exists(UPLOAD_FOLDER):
 		os.makedirs(UPLOAD_FOLDER)

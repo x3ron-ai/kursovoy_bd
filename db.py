@@ -57,11 +57,28 @@ def get_user_by_credentials(email, password):
 def get_user_info(user_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
-	cur.execute("SELECT name, role FROM users WHERE id = %s", (user_id,))
+	cur.execute("SELECT name, role, default_address FROM users WHERE id = %s", (user_id,))
 	result = cur.fetchone()
 	cur.close()
 	conn.close()
-	return result
+	return result if result else (None, None, None)
+
+def update_user_address(user_id, default_address):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			UPDATE users
+			SET default_address = %s
+			WHERE id = %s
+		""", (default_address, user_id))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
 
 def get_all_users():
 	conn = get_db_connection()
@@ -349,14 +366,15 @@ def get_seller_orders(seller_id):
 	conn.close()
 	return result
 
-def create_order(user_id, total_price):
+def create_order(user_id, total_price, delivery_address):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	try:
 		cur.execute("""
-			INSERT INTO orders (user_id, status, total_price)
-			VALUES (%s, 'pending', %s) RETURNING id
-		""", (user_id, total_price))
+			INSERT INTO orders (user_id, status, total_price, delivery_address)
+			VALUES (%s, 'pending', %s, %s)
+			RETURNING id
+		""", (user_id, total_price, delivery_address))
 		order_id = cur.fetchone()[0]
 		conn.commit()
 		return order_id
