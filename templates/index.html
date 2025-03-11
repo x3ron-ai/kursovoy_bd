@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Available Products</h1>
+    <p>Hello, {{ name }}! Your role is: {{ role }}</p>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Images</th>
+            <th>Seller</th>
+            {% if session.role == 'customer' %}
+            <th>Action</th>
+            {% endif %}
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>{{ product[0] }}</td>
+            <td>{{ product[1] }}</td>
+            <td>{{ product[2] }}</td>
+            <td>{{ product[3] }}</td>
+            <td>{{ product[4] }}</td>
+            <td>
+                {% for url in product[5] %}
+                    <img src="{{ url }}" alt="Product image" width="50">
+                {% endfor %}
+            </td>
+            <td>{{ product[6] }}</td>
+            {% if session.role == 'customer' %}
+            <td>
+                <form action="{{ url_for('index') }}" method="POST">
+                    <input type="hidden" name="product_id" value="{{ product[0] }}">
+                    <input type="number" name="quantity" value="1" min="1">
+                    <button type="submit">Add to Cart</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

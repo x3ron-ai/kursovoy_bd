@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+	<h1>Your Profile</h1>
+	<h2>Cart</h2>
+	<table border="1">
+		<tr>
+			<th>ID</th>
+			<th>Name</th>
+			<th>Price</th>
+			<th>Quantity</th>
+			<th>Action</th>
+		</tr>
+		{% for item in cart_items %}
+		<tr>
+			<td>{{ item[0] }}</td>
+			<td>{{ item[1] }}</td>
+			<td>{{ item[2] }}</td>
+			<td>{{ item[3] }}</td>
+			<td>
+				<form method="POST">
+					<input type="hidden" name="action" value="remove">
+					<input type="hidden" name="product_id" value="{{ item[0] }}">
+					<button type="submit">Remove</button>
+				</form>
+			</td>
+		</tr>
+		{% endfor %}
+	</table>
+	{% if cart_items %}
+	<form method="POST">
+		<input type="hidden" name="action" value="checkout">
+		<button type="submit">Place Order</button>
+	</form>
+	{% endif %}
+	
+	<h2>Your Orders</h2>
+	<table border="1">
+		<tr>
+			<th>ID</th>
+			<th>Status</th>
+			<th>Total Price</th>
+			<th>Created At</th>
+		</tr>
+		{% for order in orders %}
+		<tr>
+			<td>{{ order[0] }}</td>
+			<td>{{ order[1] }}</td>
+			<td>{{ order[2] }}</td>
+			<td>{{ order[3] }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<a href="{{ url_for('index') }}">Back to Products</a>
+{% endblock %}

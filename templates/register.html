@@ -1,27 +1,16 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Регистрация</title>
-	<link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-	<div class="container">
-		<h2>Регистрация</h2>
-		<input type="text" id="name" placeholder="Имя">
-		<input type="email" id="email" placeholder="Email">
-		<input type="password" id="password" placeholder="Пароль">
-		<select id="role">
-			<option value="customer">Покупатель</option>
-			<option value="seller">Продавец</option>
-			<option value="courier">Курьер</option>
-		</select>
-		<button onclick="register()">Зарегистрироваться</button>
-		<p>Уже есть аккаунт? <a href="/login">Войти</a></p>
-		<p id="message"></p>
-	</div>
-	<script src="/static/js/auth.js"></script>
-</body>
-</html>
-
+{% extends "base.html" %}
+{% block content %}
+    <h1>Register</h1>
+    <form method="POST">
+        <input type="text" name="name" placeholder="Name" required><br>
+        <input type="email" name="email" placeholder="Email" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <select name="role">
+            <option value="customer">Customer</option>
+            <option value="seller">Seller</option>
+            <option value="courier">Courier</option>
+        </select><br>
+        <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+{% endblock %}

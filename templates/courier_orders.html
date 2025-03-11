@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Courier Orders</h1>
+    <h2>Active Orders</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Order Status</th>
+            <th>Total Price</th>
+            <th>Delivery Status</th>
+        </tr>
+        {% for order in active_orders %}
+        <tr>
+            <td>{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+            <td>{{ order[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Available Orders</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Total Price</th>
+        </tr>
+        {% for order in available_orders %}
+        <tr>
+            <td>{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{{ url_for('index') }}">Back</a>
+{% endblock %}

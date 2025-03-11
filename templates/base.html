@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Management System</title>
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% if session.user_id %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+        {% if session.role == 'customer' %}
+            <a href="{{ url_for('customer_profile') }}">Profile</a>
+        {% elif session.role == 'admin' %}
+            <a href="{{ url_for('admin_panel') }}">Admin Panel</a>
+        {% elif session.role == 'seller' %}
+            <a href="{{ url_for('seller_profile') }}">Seller Profile</a>
+        {% elif session.role == 'courier' %}
+            <a href="{{ url_for('courier_orders') }}">Courier Orders</a>
+        {% endif %}
+    {% endif %}
+    {% block content %}{% endblock %}
+</body>
+</html>

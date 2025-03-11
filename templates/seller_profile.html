@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Seller Profile</h1>
+    <h2>Add New Product</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="text" name="name" placeholder="Name" required><br>
+        <textarea name="description" placeholder="Description"></textarea><br>
+        <input type="number" name="price" step="0.01" placeholder="Price" required><br>
+        <input type="number" name="quantity" placeholder="Quantity" required><br>
+        <input type="file" name="images" multiple accept="image/*"><br>
+        <button type="submit">Add Product</button>
+    </form>
+    <h2>Your Products</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Images</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>{{ product[0] }}</td>
+            <td>{{ product[1] }}</td>
+            <td>{{ product[2] }}</td>
+            <td>{{ product[3] }}</td>
+            <td>{{ product[4] }}</td>
+            <td>
+                {% for url in product[5] %}
+                    <img src="{{ url }}" alt="Product image" width="50">
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{{ url_for('index') }}">Back</a>
+{% endblock %}

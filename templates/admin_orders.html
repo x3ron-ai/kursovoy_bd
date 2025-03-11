@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>All Orders</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Total Price</th>
+            <th>Created At</th>
+            <th>Customer</th>
+        </tr>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+            <td>{{ order[3] }}</td>
+            <td>{{ order[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{{ url_for('admin_panel') }}">Back</a>
+{% endblock %}
