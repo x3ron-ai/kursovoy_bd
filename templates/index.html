@@ -1,43 +1,31 @@
 {% extends "base.html" %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
+{% endblock %}
 {% block content %}
     <h1>Available Products</h1>
     <p>Hello, {{ name }}! Your role is: {{ role }}</p>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Images</th>
-            <th>Seller</th>
-            {% if session.role == 'customer' %}
-            <th>Action</th>
-            {% endif %}
-        </tr>
+    <div class="products-grid">
         {% for product in products %}
-        <tr>
-            <td>{{ product[0] }}</td>
-            <td>{{ product[1] }}</td>
-            <td>{{ product[2] }}</td>
-            <td>{{ product[3] }}</td>
-            <td>{{ product[4] }}</td>
-            <td>
+        <div class="product-card">
+            <h3>{{ product[1] }}</h3>
+            <p>{{ product[2] }}</p>
+            <p><strong>Price:</strong> ${{ product[3] }}</p>
+            <p><strong>Quantity:</strong> {{ product[4] }}</p>
+            <div class="images">
                 {% for url in product[5] %}
-                    <img src="{{ url }}" alt="Product image" width="50">
+                    <img src="{{ url }}" alt="Product image" width="100">
                 {% endfor %}
-            </td>
-            <td>{{ product[6] }}</td>
+            </div>
+            <p><strong>Seller:</strong> {{ product[6] }}</p>
             {% if session.role == 'customer' %}
-            <td>
-                <form action="{{ url_for('index') }}" method="POST">
-                    <input type="hidden" name="product_id" value="{{ product[0] }}">
-                    <input type="number" name="quantity" value="1" min="1">
-                    <button type="submit">Add to Cart</button>
-                </form>
-            </td>
+            <form action="{{ url_for('index') }}" method="POST">
+                <input type="hidden" name="product_id" value="{{ product[0] }}">
+                <input type="number" name="quantity" value="1" min="1" style="width: 60px;">
+                <button type="submit">Add to Cart</button>
+            </form>
             {% endif %}
-        </tr>
+        </div>
         {% endfor %}
-    </table>
+    </div>
 {% endblock %}

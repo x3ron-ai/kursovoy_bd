@@ -479,4 +479,4 @@ def courier_orders():
 if __name__ == '__main__':
 	if not os.path.exists(UPLOAD_FOLDER):
 		os.makedirs(UPLOAD_FOLDER)
-	app.run('0.0.0.', 5723, debug=True)
+	app.run('0.0.0.0', 5723, debug=True)

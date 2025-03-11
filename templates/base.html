@@ -2,27 +2,36 @@
 <html>
 <head>
     <title>Order Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block styles %}{% endblock %}
 </head>
 <body>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    {% if session.user_id %}
-        <a href="{{ url_for('logout') }}">Logout</a>
-        {% if session.role == 'customer' %}
-            <a href="{{ url_for('customer_profile') }}">Profile</a>
-        {% elif session.role == 'admin' %}
-            <a href="{{ url_for('admin_panel') }}">Admin Panel</a>
-        {% elif session.role == 'seller' %}
-            <a href="{{ url_for('seller_profile') }}">Seller Profile</a>
-        {% elif session.role == 'courier' %}
-            <a href="{{ url_for('courier_orders') }}">Courier Orders</a>
-        {% endif %}
-    {% endif %}
-    {% block content %}{% endblock %}
+    <div class="container">
+        <header>
+            <span>Order Management System</span>
+            {% if session.user_id %}
+                {% if session.role == 'customer' %}
+                    <a href="{{ url_for('customer_profile') }}">Profile</a>
+                {% elif session.role == 'admin' %}
+                    <a href="{{ url_for('admin_panel') }}">Admin Panel</a>
+                {% elif session.role == 'seller' %}
+                    <a href="{{ url_for('seller_profile') }}">Seller Profile</a>
+                {% elif session.role == 'courier' %}
+                    <a href="{{ url_for('courier_orders') }}">Courier Orders</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% endif %}
+        </header>
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        {% block content %}{% endblock %}
+    </div>
 </body>
 </html>

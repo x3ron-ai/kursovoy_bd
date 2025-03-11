@@ -1,39 +1,33 @@
 {% extends "base.html" %}
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
+{% endblock %}
 {% block content %}
     <h1>Seller Profile</h1>
     <h2>Add New Product</h2>
     <form method="POST" enctype="multipart/form-data">
-        <input type="text" name="name" placeholder="Name" required><br>
-        <textarea name="description" placeholder="Description"></textarea><br>
-        <input type="number" name="price" step="0.01" placeholder="Price" required><br>
-        <input type="number" name="quantity" placeholder="Quantity" required><br>
-        <input type="file" name="images" multiple accept="image/*"><br>
-        <button type="submit">Add Product</button>
+        <input type="text" name="name" placeholder="Name" required>
+        <textarea name="description" placeholder="Description"></textarea>
+        <input type="number" name="price" step="0.01" placeholder="Price" required>
+        <input type="number" name="quantity" placeholder="Quantity" required>
+        <input type="file" name="images" multiple accept="image/*">
+        <input type="submit" value="Add Product">
     </form>
     <h2>Your Products</h2>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Images</th>
-        </tr>
+    <div class="products-grid">
         {% for product in products %}
-        <tr>
-            <td>{{ product[0] }}</td>
-            <td>{{ product[1] }}</td>
-            <td>{{ product[2] }}</td>
-            <td>{{ product[3] }}</td>
-            <td>{{ product[4] }}</td>
-            <td>
+        <div class="product-card">
+            <h3>{{ product[1] }}</h3>
+            <p>{{ product[2] }}</p>
+            <p><strong>Price:</strong> ${{ product[3] }}</p>
+            <p><strong>Quantity:</strong> {{ product[4] }}</p>
+            <div class="images">
                 {% for url in product[5] %}
-                    <img src="{{ url }}" alt="Product image" width="50">
+                    <img src="{{ url }}" alt="Product image" width="100">
                 {% endfor %}
-            </td>
-        </tr>
+            </div>
+        </div>
         {% endfor %}
-    </table>
-    <a href="{{ url_for('index') }}">Back</a>
+    </div>
+    <a href="{{ url_for('index') }}" class="button">Back</a>
 {% endblock %}
