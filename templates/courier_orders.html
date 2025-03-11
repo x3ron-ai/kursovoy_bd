@@ -1,37 +1,71 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Courier Orders</h1>
-    <h2>Active Orders</h2>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Order Status</th>
-            <th>Total Price</th>
-            <th>Delivery Status</th>
-        </tr>
-        {% for order in active_orders %}
-        <tr>
-            <td>{{ order[0] }}</td>
-            <td>{{ order[1] }}</td>
-            <td>{{ order[2] }}</td>
-            <td>{{ order[3] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <h2>Available Orders</h2>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Status</th>
-            <th>Total Price</th>
-        </tr>
-        {% for order in available_orders %}
-        <tr>
-            <td>{{ order[0] }}</td>
-            <td>{{ order[1] }}</td>
-            <td>{{ order[2] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <a href="{{ url_for('index') }}">Back</a>
+	<h1>Courier Orders</h1>
+	
+	<div class="section">
+		<h2>Active Orders</h2>
+		<table>
+			<tr>
+				<th>Order ID</th>
+				<th>Order Status</th>
+				<th>Total Price</th>
+				<th>Delivery Status</th>
+				<th>Estimated Delivery</th>
+				<th>Delivered At</th>
+				<th>Action</th>
+			</tr>
+			{% for order in active_orders %}
+			<tr>
+				<td>{{ order[0] }}</td>
+				<td>{{ order[1] }}</td>
+				<td>{{ order[2] }}</td>
+				<td>{{ order[3] }}</td>
+				<td>{{ order[4] or 'N/A' }}</td>
+				<td>{{ order[5] or 'N/A' }}</td>
+				<td>
+					<form method="POST">
+						<input type="hidden" name="action" value="update_status">
+						<input type="hidden" name="order_id" value="{{ order[0] }}">
+						<select name="new_status">
+							<option value="in transit" {% if order[3] == 'in transit' %}selected{% endif %}>In Transit</option>
+							<option value="delivered" {% if order[3] == 'delivered' %}selected{% endif %}>Delivered</option>
+						</select>
+						<button type="submit">Update</button>
+					</form>
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	
+	<div class="section">
+		<h2>Available Orders</h2>
+		<table>
+			<tr>
+				<th>Order ID</th>
+				<th>Order Status</th>
+				<th>Total Price</th>
+				<th>Estimated Delivery</th>
+				<th>Action</th>
+			</tr>
+			{% for order in available_orders %}
+			<tr>
+				<td>{{ order[0] }}</td>
+				<td>{{ order[1] }}</td>
+				<td>{{ order[2] }}</td>
+				<td>
+					<input type="datetime-local" name="estimated_delivery" required>
+				</td>
+				<td>
+					<form method="POST">
+						<input type="hidden" name="action" value="assign">
+						<input type="hidden" name="order_id" value="{{ order[0] }}">
+						<button type="submit">Take Order</button>
+					</form>
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	<a href="{{ url_for('index') }}" class="button">Back</a>
 {% endblock %}

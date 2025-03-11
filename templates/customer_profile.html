@@ -43,6 +43,7 @@
                 <th>Status</th>
                 <th>Total Price</th>
                 <th>Created At</th>
+                <th>Action</th>
             </tr>
             {% for order in orders %}
             <tr>
@@ -50,6 +51,15 @@
                 <td>{{ order[1] }}</td>
                 <td>{{ order[2] }}</td>
                 <td>{{ order[3] }}</td>
+                <td>
+                    {% if order[1] == 'pending' %}
+                    <form method="POST">
+                        <input type="hidden" name="action" value="pay">
+                        <input type="hidden" name="order_id" value="{{ order[0] }}">
+                        <button type="submit">Pay</button>
+                    </form>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </table>
