@@ -2,6 +2,7 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import hashlib
 
 load_dotenv()
 
@@ -141,14 +142,17 @@ def get_all_products():
 	conn = get_db_connection()
 	cur = conn.cursor()
 	cur.execute("""
-		SELECT p.id, p.name, p.description, p.price, p.quantity, p.image_urls, u.name
+		SELECT p.id, p.name, p.description, p.price, COALESCE(SUM(wp.quantity), 0), 
+		       array_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL)
 		FROM products p
-		JOIN users u ON p.seller_id = u.id
+		LEFT JOIN warehouse_products wp ON p.id = wp.product_id
+		LEFT JOIN product_images pi ON p.id = pi.product_id
+		GROUP BY p.id, p.name, p.description, p.price
 	""")
-	result = cur.fetchall()
+	products = cur.fetchall()
 	cur.close()
 	conn.close()
-	return result
+	return products
 
 def get_products_by_seller(seller_id):
 	conn = get_db_connection()
@@ -186,6 +190,29 @@ def get_product_quantity(product_id):
 	conn.close()
 	return result
 
+def update_product_quantity(seller_id, product_id, warehouse_id, quantity):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		# Проверяем, что товар принадлежит продавцу
+		cur.execute("SELECT seller_id FROM products WHERE id = %s", (product_id,))
+		if cur.fetchone()[0] != seller_id:
+			raise ValueError("Product does not belong to this seller")
+		# Обновляем или добавляем количество на складе
+		cur.execute("""
+			INSERT INTO warehouse_products (warehouse_id, product_id, quantity)
+			VALUES (%s, %s, %s)
+			ON CONFLICT (warehouse_id, product_id)
+			DO UPDATE SET quantity = %s
+		""", (warehouse_id, product_id, quantity, quantity))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
 def get_product_seller(product_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
@@ -195,14 +222,31 @@ def get_product_seller(product_id):
 	conn.close()
 	return result
 
-def add_product(name, description, price, quantity, image_urls, seller_id):
+def get_seller_products(seller_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT p.id, p.name, p.description, p.price, COALESCE(wp.quantity, 0), 
+		       COALESCE(array_agg(pi.image_url) FILTER (WHERE pi.image_url IS NOT NULL), '{}')
+		FROM products p
+		LEFT JOIN warehouse_products wp ON p.id = wp.product_id
+		LEFT JOIN product_images pi ON p.id = pi.product_id
+		WHERE p.seller_id = %s
+		GROUP BY p.id, p.name, p.description, p.price, wp.quantity
+	""", (seller_id,))
+	products = cur.fetchall()
+	cur.close()
+	conn.close()
+	return products
+
+def add_product_image(product_id, image_url):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	try:
 		cur.execute("""
-			INSERT INTO products (name, description, price, quantity, image_urls, seller_id)
-			VALUES (%s, %s, %s, %s, %s, %s)
-		""", (name, description, price, quantity, image_urls, seller_id))
+			INSERT INTO product_images (product_id, image_url)
+			VALUES (%s, %s)
+		""", (product_id, image_url))
 		conn.commit()
 	except psycopg2.Error as e:
 		conn.rollback()
@@ -211,15 +255,45 @@ def add_product(name, description, price, quantity, image_urls, seller_id):
 		cur.close()
 		conn.close()
 
-def update_product(product_id, name, description, price, quantity, image_urls):
+def create_product(seller_id, name, description, price, warehouse_id, quantity):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			INSERT INTO products (seller_id, name, description, price)
+			VALUES (%s, %s, %s, %s)
+			RETURNING id
+		""", (seller_id, name, description, price))
+		product_id = cur.fetchone()[0]
+		# Добавляем количество на склад
+		cur.execute("""
+			INSERT INTO warehouse_products (warehouse_id, product_id, quantity)
+			VALUES (%s, %s, %s)
+		""", (warehouse_id, product_id, quantity))
+		conn.commit()
+		return product_id
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def update_product(product_id, seller_id, name, description, price, warehouse_id, quantity):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	try:
 		cur.execute("""
 			UPDATE products
-			SET name = %s, description = %s, price = %s, quantity = %s, image_urls = %s
-			WHERE id = %s
-		""", (name, description, price, quantity, image_urls, product_id))
+			SET name = %s, description = %s, price = %s
+			WHERE id = %s AND seller_id = %s
+		""", (name, description, price, product_id, seller_id))
+		cur.execute("""
+			INSERT INTO warehouse_products (warehouse_id, product_id, quantity)
+			VALUES (%s, %s, %s)
+			ON CONFLICT (warehouse_id, product_id)
+			DO UPDATE SET quantity = %s
+		""", (warehouse_id, product_id, quantity, quantity))
 		conn.commit()
 	except psycopg2.Error as e:
 		conn.rollback()
@@ -228,11 +302,13 @@ def update_product(product_id, name, description, price, quantity, image_urls):
 		cur.close()
 		conn.close()
 
-def delete_product(product_id):
+def delete_product(product_id, seller_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	try:
-		cur.execute("DELETE FROM products WHERE id = %s", (product_id,))
+		cur.execute("DELETE FROM product_images WHERE product_id = %s", (product_id,))
+		cur.execute("DELETE FROM warehouse_products WHERE product_id = %s", (product_id,))
+		cur.execute("DELETE FROM products WHERE id = %s AND seller_id = %s", (product_id, seller_id))
 		conn.commit()
 	except psycopg2.Error as e:
 		conn.rollback()
@@ -352,29 +428,31 @@ def get_all_orders():
 def get_seller_orders(seller_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
-	cur.execute("""
-		SELECT DISTINCT o.id, o.status, o.total_price, o.created_at, u.name
-		FROM orders o
-		JOIN users u ON o.user_id = u.id
-		JOIN order_items oi ON o.id = oi.order_id
-		JOIN products p ON oi.product_id = p.id
-		WHERE p.seller_id = %s AND o.status != 'cancelled'
-		ORDER BY o.created_at DESC
-	""", (seller_id,))
-	result = cur.fetchall()
-	cur.close()
-	conn.close()
-	return result
+	try:
+		cur.execute("""
+			SELECT id, status, total_price, delivery_address, warehouse_id, created_at, parent_order_id
+			FROM orders
+			WHERE seller_id = %s
+			AND status IN ('created', 'paid', 'in assembly', 'assembled')
+		""", (seller_id,))
+		orders = cur.fetchall() or []
+	except psycopg2.Error as e:
+		print(f"Database error: {str(e)}")
+		orders = []
+	finally:
+		cur.close()
+		conn.close()
+	return orders
 
-def create_order(user_id, total_price, delivery_address):
+def create_order(user_id, total_price, delivery_address, warehouse_id, parent_order_id, seller_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	try:
 		cur.execute("""
-			INSERT INTO orders (user_id, status, total_price, delivery_address)
-			VALUES (%s, 'pending', %s, %s)
+			INSERT INTO orders (user_id, status, total_price, delivery_address, warehouse_id, parent_order_id, seller_id)
+			VALUES (%s, 'created', %s, %s, %s, %s, %s)
 			RETURNING id
-		""", (user_id, total_price, delivery_address))
+		""", (user_id, total_price, delivery_address, warehouse_id, parent_order_id, seller_id))
 		order_id = cur.fetchone()[0]
 		conn.commit()
 		return order_id
@@ -384,6 +462,18 @@ def create_order(user_id, total_price, delivery_address):
 	finally:
 		cur.close()
 		conn.close()
+def get_product_quantity_in_warehouse(warehouse_id, product_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT quantity
+		FROM warehouse_products
+		WHERE warehouse_id = %s AND product_id = %s
+	""", (warehouse_id, product_id))
+	result = cur.fetchone()
+	cur.close()
+	conn.close()
+	return result[0] if result else 0
 
 def add_order_item(order_id, product_id, quantity, price):
 	conn = get_db_connection()
@@ -422,45 +512,46 @@ def get_cart_for_checkout(user_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	cur.execute("""
-		SELECT c.product_id, c.quantity, p.price
+		SELECT c.product_id, c.quantity, p.price, p.seller_id
 		FROM cart c
 		JOIN products p ON c.product_id = p.id
 		WHERE c.user_id = %s
 	""", (user_id,))
-	result = cur.fetchall()
+	items = cur.fetchall()
 	cur.close()
 	conn.close()
-	return result
+	return items
 
 # Курьеры
 def get_active_courier_orders(courier_id):
 	conn = get_db_connection()
 	cur = conn.cursor()
 	cur.execute("""
-		SELECT o.id, o.status, o.total_price, d.status as delivery_status, d.estimated_delivery, d.delivered_at
+		SELECT o.id, o.status, o.total_price, o.delivery_address, d.estimated_delivery, d.delivered_at
 		FROM orders o
 		JOIN delivery d ON o.id = d.order_id
-		WHERE d.courier_id = %s AND d.status != 'delivered'
+		WHERE d.courier_id = %s
+		AND o.status IN ('in delivery')
 	""", (courier_id,))
-	result = cur.fetchall()
+	orders = cur.fetchall()
 	cur.close()
 	conn.close()
-	return result
+	return orders
 
 def get_available_orders():
 	conn = get_db_connection()
 	cur = conn.cursor()
 	cur.execute("""
-		SELECT o.id, o.status, o.total_price
+		SELECT o.id, o.status, o.total_price, o.delivery_address, o.warehouse_id
 		FROM orders o
-		WHERE o.status = 'paid' AND NOT EXISTS (
-			SELECT 1 FROM delivery d WHERE d.order_id = o.id
-		)
+		LEFT JOIN delivery d ON o.id = d.order_id
+		WHERE o.status = 'assembled'
+		AND d.order_id IS NULL
 	""")
-	result = cur.fetchall()
+	orders = cur.fetchall()
 	cur.close()
 	conn.close()
-	return result
+	return orders
 
 def assign_order_to_courier(order_id, courier_id, estimated_delivery):
 	conn = get_db_connection()
@@ -529,3 +620,276 @@ def check_courier_assignment(order_id, courier_id):
 	cur.close()
 	conn.close()
 	return result > 0
+# --- Функции для складов ---
+def create_warehouse(seller_id, address):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			INSERT INTO warehouses (seller_id, address)
+			VALUES (%s, %s)
+			RETURNING id
+		""", (seller_id, address))
+		warehouse_id = cur.fetchone()[0]
+		conn.commit()
+		return warehouse_id
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def get_warehouses_by_seller(seller_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT id, address
+		FROM warehouses
+		WHERE seller_id = %s
+	""", (seller_id,))
+	warehouses = cur.fetchall()
+	cur.close()
+	conn.close()
+	return warehouses
+
+def update_warehouse(warehouse_id, address):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			UPDATE warehouses
+			SET address = %s
+			WHERE id = %s
+		""", (address, warehouse_id))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def delete_warehouse(warehouse_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("DELETE FROM warehouse_products WHERE warehouse_id = %s", (warehouse_id,))
+		cur.execute("DELETE FROM warehouses WHERE id = %s", (warehouse_id,))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+# --- Функции для товаров на складах ---
+def add_product_to_warehouse(warehouse_id, product_id, quantity):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			INSERT INTO warehouse_products (warehouse_id, product_id, quantity)
+			VALUES (%s, %s, %s)
+			ON CONFLICT (warehouse_id, product_id)
+			DO UPDATE SET quantity = warehouse_products.quantity + %s
+		""", (warehouse_id, product_id, quantity, quantity))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def get_products_by_warehouse(warehouse_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT p.id, p.name, p.description, p.price, wp.quantity, p.image_urls
+		FROM products p
+		JOIN warehouse_products wp ON p.id = wp.product_id
+		WHERE wp.warehouse_id = %s
+	""", (warehouse_id,))
+	products = cur.fetchall()
+	cur.close()
+	conn.close()
+	return products
+
+def update_product_quantity_in_warehouse(warehouse_id, product_id, quantity):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			UPDATE warehouse_products
+			SET quantity = %s
+			WHERE warehouse_id = %s AND product_id = %s
+		""", (quantity, warehouse_id, product_id))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def remove_product_from_warehouse(warehouse_id, product_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			DELETE FROM warehouse_products
+			WHERE warehouse_id = %s AND product_id = %s
+		""", (warehouse_id, product_id))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+# складмены
+def get_warehouse_orders(warehouse_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT o.id, o.status, o.total_price, o.delivery_address, o.warehouse_id, o.created_at
+		FROM orders o
+		WHERE o.warehouse_id = %s
+		AND o.status IN ('under assembly', 'paid')
+	""", (warehouse_id,))
+	orders = cur.fetchall()
+	cur.close()
+	conn.close()
+	return orders
+
+def get_warehouse_orders_for_user(user_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+ 	   SELECT o.id, o.status, o.total_price, o.delivery_address, o.warehouse_id, o.created_at
+ 	   FROM orders o
+ 	   JOIN warehouse_workers ww ON o.warehouse_id = ww.warehouse_id
+ 	   WHERE ww.user_id = %s
+ 	   AND o.status IN ('under assembly', 'paid')
+	""", (user_id,))
+	orders = cur.fetchall()
+	cur.close()
+	conn.close()
+	return orders
+
+def create_parent_order(user_id, total_price, delivery_address):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			INSERT INTO parent_orders (user_id, status, total_price, delivery_address)
+			VALUES (%s, 'created', %s, %s)
+			RETURNING id
+		""", (user_id, total_price, delivery_address))
+		parent_order_id = cur.fetchone()[0]
+		conn.commit()
+		return parent_order_id
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def get_parent_order(parent_order_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT id, user_id, status, total_price, delivery_address, created_at
+		FROM parent_orders
+		WHERE id = %s
+	""", (parent_order_id,))
+	order = cur.fetchone()
+	cur.close()
+	conn.close()
+	return order
+
+def update_parent_order_status(parent_order_id, status):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		cur.execute("""
+			UPDATE parent_orders
+			SET status = %s
+			WHERE id = %s
+		""", (status, parent_order_id))
+		conn.commit()
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def get_user_parent_orders(user_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT id, status, total_price, delivery_address, created_at
+		FROM parent_orders
+		WHERE user_id = %s
+	""", (user_id,))
+	orders = cur.fetchall()
+	cur.close()
+	conn.close()
+	return orders
+
+def create_warehouse_worker(seller_id, email, name, password, warehouse_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	try:
+		hashed_password = hashlib.sha256(password.encode()).hexdigest()
+		cur.execute("""
+			INSERT INTO users (name, email, password, role)
+			VALUES (%s, %s, %s, 'warehouseman')
+			RETURNING id
+		""", (name, email, hashed_password))
+		user_id = cur.fetchone()[0]
+		cur.execute("""
+			INSERT INTO warehouse_workers (user_id, warehouse_id)
+			VALUES (%s, %s)
+		""", (user_id, warehouse_id))
+		conn.commit()
+		return user_id
+	except psycopg2.Error as e:
+		conn.rollback()
+		raise e
+	finally:
+		cur.close()
+		conn.close()
+
+def get_warehouse_orders_for_user(user_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT o.id, o.status, o.total_price, o.delivery_address, o.warehouse_id, o.created_at, o.parent_order_id, o.seller_id
+		FROM orders o
+		JOIN warehouse_workers ww ON o.warehouse_id = ww.warehouse_id
+		WHERE ww.user_id = %s
+		AND o.status IN ('paid', 'in assembly')
+	""", (user_id,))
+	orders = cur.fetchall()
+	cur.close()
+	conn.close()
+	return orders
+
+def get_sub_orders(parent_order_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("""
+		SELECT id, status, total_price, delivery_address, warehouse_id, created_at, seller_id
+		FROM orders
+		WHERE parent_order_id = %s
+	""", (parent_order_id,))
+	sub_orders = cur.fetchall()
+	cur.close()
+	conn.close()
+	return sub_orders

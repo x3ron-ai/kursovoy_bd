@@ -7,9 +7,11 @@
 		<table>
 			<tr>
 				<th>Order ID</th>
-				<th>Order Status</th>
-				<th>Total Price</th>
+				<th>Assembly Status</th>
 				<th>Delivery Status</th>
+				<th>Total Price</th>
+				<th>Delivery Address</th>
+				<th>Warehouse ID</th>
 				<th>Estimated Delivery</th>
 				<th>Delivered At</th>
 				<th>Action</th>
@@ -17,9 +19,11 @@
 			{% for order in active_orders %}
 			<tr>
 				<td>{{ order[0] }}</td>
-				<td>{{ order[1] }}</td>
+				<td>{{ order[1] }}</td> <!-- Assembly Status (o.status) -->
+				<td>{{ order[3] }}</td> <!-- Delivery Status (d.status) -->
 				<td>{{ order[2] }}</td>
-				<td>{{ order[3] }}</td>
+				<td>{{ order[6] or 'Not specified' }}</td> <!-- Delivery Address -->
+				<td>{{ order[7] or 'N/A' }}</td> <!-- Warehouse ID -->
 				<td>{{ order[4] or 'N/A' }}</td>
 				<td>{{ order[5] or 'N/A' }}</td>
 				<td>
@@ -48,16 +52,20 @@
 		<table>
 			<tr>
 				<th>Order ID</th>
-				<th>Order Status</th>
+				<th>Assembly Status</th>
 				<th>Total Price</th>
+				<th>Delivery Address</th>
+				<th>Warehouse ID</th>
 				<th>Estimated Delivery</th>
 				<th>Action</th>
 			</tr>
 			{% for order in available_orders %}
 			<tr>
 				<td>{{ order[0] }}</td>
-				<td>{{ order[1] }}</td>
+				<td>{{ order[1] }}</td> <!-- Assembly Status -->
 				<td>{{ order[2] }}</td>
+				<td>{{ order[3] or 'Not specified' }}</td> <!-- Delivery Address -->
+				<td>{{ order[4] or 'N/A' }}</td> <!-- Warehouse ID -->
 				<td>
 					<form method="POST" id="form-{{ order[0] }}" style="margin: 0;">
 						<input type="hidden" name="action" value="assign">

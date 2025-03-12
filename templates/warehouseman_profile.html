@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+	<h1>Warehouseman Profile</h1>
+
+	<div class="section">
+		<h2>Orders to Assemble</h2>
+		<table>
+			<tr>
+				<th>Order ID</th>
+				<th>Status</th>
+				<th>Total Price</th>
+				<th>Delivery Address</th>
+				<th>Warehouse ID</th>
+				<th>Created At</th>
+				<th>Action</th>
+			</tr>
+			{% for order in orders %}
+			<tr>
+				<td>{{ order[0] }}</td>
+				<td>{{ order[1] }}</td>
+				<td>{{ order[2] }}</td>
+				<td>{{ order[3] or 'Not specified' }}</td>
+				<td>{{ order[4] }}</td>
+				<td>{{ order[5] }}</td>
+				<td>
+					{% if order[1] in ['under assembly', 'paid'] %}
+					<form method="POST">
+						<input type="hidden" name="action" value="mark_assembled">
+						<input type="hidden" name="order_id" value="{{ order[0] }}">
+						<button type="submit">Mark as Assembled</button>
+					</form>
+					{% endif %}
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	<a href="{{ url_for('warehouseman_profile') }}" class="button">Profile</a>
+	<a href="{{ url_for('index') }}" class="button">Back</a>
+{% endblock %}
+

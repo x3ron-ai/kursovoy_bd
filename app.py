@@ -8,13 +8,20 @@ from db import (
 	get_db_connection, get_user_by_email, create_user, get_user_by_credentials,
 	get_user_info, get_all_users, create_session, delete_session, log_action,
 	get_all_products, get_products_by_seller, get_all_products_with_seller,
-	get_product_quantity, get_product_seller, add_product, update_product,
+	get_product_quantity, get_product_seller, create_product, update_product,
+	get_seller_products, update_product_quantity, add_product_image,
 	delete_product, add_to_cart, remove_from_cart, get_cart_items, clear_cart,
 	get_user_orders, get_all_orders, get_seller_orders, create_order,
 	add_order_item, update_product_quantity, get_cart_for_checkout,
 	get_active_courier_orders, get_available_orders, assign_order_to_courier,
 	update_delivery_status, check_courier_assignment, update_order_status,
-	update_user_address
+	update_user_address, create_warehouse, get_warehouses_by_seller,
+	update_warehouse, delete_warehouse, add_product_to_warehouse,
+	get_products_by_warehouse, update_product_quantity_in_warehouse,
+	remove_product_from_warehouse, get_warehouse_orders,
+	create_parent_order, get_parent_order, update_parent_order_status,
+	get_user_parent_orders, create_warehouse_worker, get_sub_orders,
+	get_warehouse_orders_for_user, get_product_quantity_in_warehouse
 )
 
 app = Flask(__name__)
@@ -74,7 +81,7 @@ def register():
 			flash('All fields are required')
 			return render_template('register.html')
 
-		if role not in ['customer', 'seller', 'courier']:
+		if role not in ['customer', 'seller', 'courier']:  # Убрана роль warehouseman
 			flash('Invalid role selected')
 			return render_template('register.html')
 
@@ -143,23 +150,20 @@ def logout():
 def customer_profile():
 	if request.method == 'POST':
 		action = request.form.get('action')
-		
-		if action == 'remove':
-			product_id = request.form.get('product_id')
-			try:
-				remove_from_cart(session['user_id'], product_id)
-				flash('Product removed from cart')
-			except Exception as e:
-				flash(f'Error removing product: {str(e)}')
-		
-		elif action == 'checkout':
+		if action == 'checkout':
 			try:
 				cart_items = get_cart_for_checkout(session['user_id'])
 				if not cart_items:
 					flash('Your cart is empty')
 					return redirect(url_for('customer_profile'))
 				
-				total_price = sum(item[1] * item[2] for item in cart_items)
+				items_by_seller = {}
+				for item in cart_items:
+					product_id, quantity, price, seller_id = item
+					if seller_id not in items_by_seller:
+						items_by_seller[seller_id] = []
+					items_by_seller[seller_id].append((product_id, quantity, price))
+				
 				delivery_address = request.form.get('delivery_address')
 				name, role, default_address = get_user_info(session['user_id'])
 				if not delivery_address and default_address:
@@ -168,117 +172,95 @@ def customer_profile():
 					flash('Please provide a delivery address or set a default address')
 					return redirect(url_for('customer_profile'))
 				
-				order_id = create_order(session['user_id'], total_price, delivery_address)
+				total_price = sum(item[1] * item[2] for item in cart_items)
+				parent_order_id = create_parent_order(session['user_id'], total_price, delivery_address)
 				
-				for item in cart_items:
-					product_id, quantity, price = item
-					add_order_item(order_id, product_id, quantity, price)
-					update_product_quantity(product_id, quantity)
+				sub_order_ids = []
+				# Если только один продавец и все товары на одном складе
+				if len(items_by_seller) == 1:
+					seller_id = next(iter(items_by_seller))
+					items = items_by_seller[seller_id]
+					warehouses = get_warehouses_by_seller(seller_id)
+					if len(warehouses) == 1 and all(
+						get_product_quantity_in_warehouse(warehouses[0][0], item[0]) >= item[1] 
+						for item in items
+					):
+						# Один подзаказ
+						warehouse_id = warehouses[0][0]
+						order_id = create_order(session['user_id'], total_price, delivery_address, warehouse_id, parent_order_id, seller_id)
+						sub_order_ids.append(order_id)
+						for product_id, quantity, price in items:
+							add_order_item(order_id, product_id, quantity, price)
+							update_product_quantity_in_warehouse(warehouse_id, product_id, -quantity)
+					else:
+						# Дробление по складам
+						for warehouse in warehouses:
+							warehouse_id = warehouse[0]
+							sub_items = []
+							remaining_items = []
+							for product_id, quantity, price in items:
+								available = get_product_quantity_in_warehouse(warehouse_id, product_id)
+								if available >= quantity:
+									sub_items.append((product_id, quantity, price))
+								elif available > 0:
+									sub_items.append((product_id, available, price))
+									remaining_items.append((product_id, quantity - available, price))
+								else:
+									remaining_items.append((product_id, quantity, price))
+							
+							if sub_items:
+								sub_total = sum(q * p for _, q, p in sub_items)
+								order_id = create_order(session['user_id'], sub_total, delivery_address, warehouse_id, parent_order_id, seller_id)
+								sub_order_ids.append(order_id)
+								for product_id, quantity, price in sub_items:
+									add_order_item(order_id, product_id, quantity, price)
+									update_product_quantity_in_warehouse(warehouse_id, product_id, -quantity)
+							items = remaining_items
+				else:
+					# Несколько продавцов
+					for seller_id, items in items_by_seller.items():
+						seller_total = sum(item[1] * item[2] for item in items)
+						warehouses = get_warehouses_by_seller(seller_id)
+						if not warehouses:
+							raise Exception(f"No warehouses found for seller {seller_id}")
+						for warehouse in warehouses:
+							warehouse_id = warehouse[0]
+							sub_items = []
+							remaining_items = []
+							for product_id, quantity, price in items:
+								available = get_product_quantity_in_warehouse(warehouse_id, product_id)
+								if available >= quantity:
+									sub_items.append((product_id, quantity, price))
+								elif available > 0:
+									sub_items.append((product_id, available, price))
+									remaining_items.append((product_id, quantity - available, price))
+								else:
+									remaining_items.append((product_id, quantity, price))
+							
+							if sub_items:
+								sub_total = sum(q * p for _, q, p in sub_items)
+								order_id = create_order(session['user_id'], sub_total, delivery_address, warehouse_id, parent_order_id, seller_id)
+								sub_order_ids.append(order_id)
+								for product_id, quantity, price in sub_items:
+									add_order_item(order_id, product_id, quantity, price)
+									update_product_quantity_in_warehouse(warehouse_id, product_id, -quantity)
+							items = remaining_items
+				
+				# Обновление статуса после оплаты
+				for order_id in sub_order_ids:
+					update_order_status(order_id, 'paid')
+				update_parent_order_status(parent_order_id, 'paid')
 				
 				clear_cart(session['user_id'])
-				log_action(session['user_id'], f'Order {order_id} created')
+				log_action(session['user_id'], f'Parent order {parent_order_id} created')
 				flash('Order placed successfully')
 			except Exception as e:
 				flash(f'Checkout failed: {str(e)}')
-		
-		elif action == 'pay':
-			order_id = request.form.get('order_id')
-			try:
-				update_order_status(order_id, 'paid')
-				log_action(session['user_id'], f'Order {order_id} paid')
-				flash('Order marked as paid')
-			except Exception as e:
-				flash(f'Error marking order as paid: {str(e)}')
-		
-		elif action == 'update_address':
-			default_address = request.form.get('default_address')
-			try:
-				update_user_address(session['user_id'], default_address)
-				flash('Default address updated successfully')
-			except Exception as e:
-				flash(f'Error updating address: {str(e)}')
 	
 	cart_items = get_cart_items(session['user_id'])
-	orders = get_user_orders(session['user_id'])
+	orders = get_user_parent_orders(session['user_id'])
 	name, role, default_address = get_user_info(session['user_id'])
 	return render_template('customer_profile.html', cart_items=cart_items, orders=orders, default_address=default_address)
-
-@app.route('/admin')
-@login_required('admin')
-def admin_panel():
-	return render_template('admin_panel.html')
-
-@app.route('/admin/users')
-@login_required('admin')
-def admin_users():
-	users = get_all_users()
-	return render_template('admin_users.html', users=users)
-
-@app.route('/admin/products', methods=['GET', 'POST'])
-@login_required('admin')
-def admin_products():
-	if request.method == 'POST':
-		action = request.form.get('action')
-		
-		if action == 'add':
-			name = request.form.get('name')
-			description = request.form.get('description')
-			price = float(request.form.get('price'))
-			quantity = int(request.form.get('quantity'))
-			files = request.files.getlist('images')
-			
-			image_urls = []
-			for file in files:
-				if file and allowed_file(file.filename):
-					filename = secure_filename(file.filename)
-					file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-					file.save(file_path)
-					image_urls.append(f"/{file_path}")
-			
-			try:
-				add_product(name, description, price, quantity, image_urls, None)
-				flash('Product added successfully')
-			except Exception as e:
-				flash(f'Error adding product: {str(e)}')
-		
-		elif action == 'edit':
-			product_id = request.form.get('product_id')
-			name = request.form.get('name')
-			description = request.form.get('description')
-			price = float(request.form.get('price'))
-			quantity = int(request.form.get('quantity'))
-			files = request.files.getlist('images')
-			
-			image_urls = request.form.getlist('existing_images')
-			for file in files:
-				if file and allowed_file(file.filename):
-					filename = secure_filename(file.filename)
-					file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-					file.save(file_path)
-					image_urls.append(f"/{file_path}")
-			
-			try:
-				update_product(product_id, name, description, price, quantity, image_urls)
-				flash('Product updated successfully')
-			except Exception as e:
-				flash(f'Error updating product: {str(e)}')
-		
-		elif action == 'delete':
-			product_id = request.form.get('product_id')
-			try:
-				delete_product(product_id)
-				flash('Product deleted successfully')
-			except Exception as e:
-				flash(f'Error deleting product: {str(e)}')
-	
-	products = get_all_products_with_seller()
-	return render_template('admin_products.html', products=products)
-
-@app.route('/admin/orders')
-@login_required('admin')
-def admin_orders():
-	orders = get_all_orders()
-	return render_template('admin_orders.html', orders=orders)
 
 @app.route('/seller', methods=['GET', 'POST'])
 @login_required('seller')
@@ -286,69 +268,95 @@ def seller_profile():
 	if request.method == 'POST':
 		action = request.form.get('action')
 		
-		if action == 'add':
+		if action == 'add_warehouse':
+			address = request.form.get('address')
+			try:
+				create_warehouse(session['user_id'], address)
+				flash('Warehouse added successfully')
+			except Exception as e:
+				flash(f'Error adding warehouse: {str(e)}')
+		
+		elif action == 'add_warehouseman':
+			email = request.form.get('email')
+			name = request.form.get('name')
+			password = request.form.get('password')
+			warehouse_id = request.form.get('warehouse_id')
+			try:
+				create_warehouse_worker(session['user_id'], email, name, password, warehouse_id)
+				flash('Warehouseman added successfully')
+			except Exception as e:
+				flash(f'Error adding warehouseman: {str(e)}')
+		
+		elif action == 'mark_assembled':
+			order_id = request.form.get('order_id')
+			try:
+				update_order_status(order_id, 'assembled')
+				sub_order = next(o for o in get_seller_orders(session['user_id']) if o[0] == int(order_id))
+				parent_order_id = sub_order[6]
+				sub_orders = get_sub_orders(parent_order_id)
+				if all(o[1] == 'assembled' for o in sub_orders):
+					update_parent_order_status(parent_order_id, 'assembled')
+				log_action(session['user_id'], f'Order {order_id} marked as assembled')
+				flash('Order marked as assembled')
+			except Exception as e:
+				flash(f'Error marking order as assembled: {str(e)}')
+		
+		elif action == 'add_product':
 			name = request.form.get('name')
 			description = request.form.get('description')
 			price = float(request.form.get('price'))
 			quantity = int(request.form.get('quantity'))
-			files = request.files.getlist('images')
-			
-			image_urls = []
-			for file in files:
-				if file and allowed_file(file.filename):
-					filename = secure_filename(file.filename)
-					file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-					file.save(file_path)
-					image_urls.append(f"/{file_path}")
-			
+			warehouse_id = request.form.get('warehouse_id')
 			try:
-				add_product(name, description, price, quantity, image_urls, session['user_id'])
+				product_id = create_product(session['user_id'], name, description, price, warehouse_id, quantity)
+				if 'images' in request.files:
+					files = request.files.getlist('images')
+					for file in files:
+						if file and allowed_file(file.filename):
+							filename = secure_filename(file.filename)
+							file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+							file.save(file_path)
+							add_product_image(product_id, url_for('static', filename='uploads/' + filename))
 				flash('Product added successfully')
 			except Exception as e:
 				flash(f'Error adding product: {str(e)}')
 		
-		elif action == 'edit':
-			product_id = request.form.get('product_id')
+		elif action == 'update_product':
+			product_id = int(request.form.get('product_id'))
 			name = request.form.get('name')
 			description = request.form.get('description')
 			price = float(request.form.get('price'))
 			quantity = int(request.form.get('quantity'))
-			files = request.files.getlist('images')
-			
-			seller_id = get_product_seller(product_id)
-			if seller_id != session['user_id']:
-				flash('You can only edit your own products')
-				return redirect(url_for('seller_profile'))
-			
-			image_urls = request.form.getlist('existing_images')
-			for file in files:
-				if file and allowed_file(file.filename):
-					filename = secure_filename(file.filename)
-					file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-					file.save(file_path)
-					image_urls.append(f"/{file_path}")
-			
+			warehouse_id = request.form.get('warehouse_id')
 			try:
-				update_product(product_id, name, description, price, quantity, image_urls)
+				update_product(product_id, session['user_id'], name, description, price, warehouse_id, quantity)
+				if 'images' in request.files:
+					files = request.files.getlist('images')
+					for file in files:
+						if file and allowed_file(file.filename):
+							filename = secure_filename(file.filename)
+							file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+							file.save(file_path)
+							add_product_image(product_id, url_for('static', filename='uploads/' + filename))
 				flash('Product updated successfully')
 			except Exception as e:
 				flash(f'Error updating product: {str(e)}')
 		
-		elif action == 'delete':
-			product_id = request.form.get('product_id')
-			seller_id = get_product_seller(product_id)
-			if seller_id != session['user_id']:
-				flash('You can only delete your own products')
-				return redirect(url_for('seller_profile'))
-			
+		elif action == 'delete_product':
+			product_id = int(request.form.get('product_id'))
 			try:
-				delete_product(product_id)
+				delete_product(product_id, session['user_id'])
 				flash('Product deleted successfully')
 			except Exception as e:
 				flash(f'Error deleting product: {str(e)}')
 	
-	products = get_products_by_seller(session['user_id'])
-	return render_template('seller_profile.html', products=products)
+	warehouses = get_warehouses_by_seller(session['user_id'])
+	orders = get_seller_orders(session['user_id'])
+	products = get_seller_products(session['user_id'])
+	if orders is None:
+		print("Warning: orders is None")
+		orders = []
+	return render_template('seller_profile.html', warehouses=warehouses, orders=orders, products=products)
 
 @app.route('/seller/orders')
 @login_required('seller')
@@ -361,11 +369,10 @@ def seller_orders():
 def courier_orders():
 	if request.method == 'POST':
 		action = request.form.get('action')
-		
 		if action == 'assign':
 			order_id = request.form.get('order_id')
 			estimated_delivery_str = request.form.get('estimated_delivery')
-			if not estimated_delivery_str:  # Добавлена проверка на None или пустую строку
+			if not estimated_delivery_str:
 				flash('Please provide an estimated delivery time')
 				return redirect(url_for('courier_orders'))
 			try:
@@ -374,6 +381,12 @@ def courier_orders():
 					flash('Estimated delivery cannot be in the past')
 				else:
 					assign_order_to_courier(order_id, session['user_id'], estimated_delivery)
+					update_order_status(order_id, 'in delivery')
+					sub_order = next(o for o in get_available_orders() if o[0] == int(order_id))
+					parent_order_id = sub_order[6]
+					sub_orders = get_sub_orders(parent_order_id)
+					if all(any(a[0] == s[0] for a in get_active_courier_orders(session['user_id'])) for s in sub_orders):
+						update_parent_order_status(parent_order_id, 'in delivery')
 					log_action(session['user_id'], f'Order {order_id} assigned to courier')
 					flash('Order assigned successfully')
 			except ValueError:
@@ -384,37 +397,52 @@ def courier_orders():
 		elif action == 'update_status':
 			order_id = request.form.get('order_id')
 			new_status = request.form.get('new_status')
-			if new_status not in ['in transit', 'delivered']:
+			if new_status not in ['in delivery', 'delivered']:
 				flash('Invalid status')
 				return redirect(url_for('courier_orders'))
-			
 			if not check_courier_assignment(order_id, session['user_id']):
 				flash('You can only update your own deliveries')
 				return redirect(url_for('courier_orders'))
-			
 			try:
 				update_delivery_status(order_id, session['user_id'], new_status)
+				if new_status == 'delivered':
+					update_order_status(order_id, 'delivered')
+					sub_order = next(o for o in get_active_courier_orders(session['user_id']) if o[0] == int(order_id))
+					parent_order_id = sub_order[6]
+					sub_orders = get_sub_orders(parent_order_id)
+					if all(any(a[0] == s[0] and a[3] == 'delivered' for a in get_active_courier_orders(session['user_id'])) for s in sub_orders):
+						update_parent_order_status(parent_order_id, 'delivered')
 				log_action(session['user_id'], f'Delivery status for order {order_id} updated to {new_status}')
 				flash(f'Delivery status updated to {new_status}')
 			except Exception as e:
 				flash(f'Error updating status: {str(e)}')
-		
-		elif action == 'cancel':
-			order_id = request.form.get('order_id')
-			if not check_courier_assignment(order_id, session['user_id']):
-				flash('You can only cancel your own deliveries')
-				return redirect(url_for('courier_orders'))
-			
-			try:
-				cancel_delivery(order_id, session['user_id'])
-				log_action(session['user_id'], f'Delivery for order {order_id} cancelled')
-				flash('Delivery cancelled successfully')
-			except Exception as e:
-				flash(f'Error cancelling delivery: {str(e)}')
 	
 	active_orders = get_active_courier_orders(session['user_id'])
 	available_orders = get_available_orders()
 	return render_template('courier_orders.html', active_orders=active_orders, available_orders=available_orders)
+
+@app.route('/warehouseman', methods=['GET', 'POST'])
+@login_required('warehouseman')
+def warehouseman_profile():
+	if request.method == 'POST':
+		action = request.form.get('action')
+		if action == 'mark_assembled':
+			order_id = request.form.get('order_id')
+			try:
+				update_order_status(order_id, 'in assembly')  # Начинаем сборку
+				update_order_status(order_id, 'assembled')	# Завершаем сборку
+				sub_order = next(o for o in get_warehouse_orders_for_user(session['user_id']) if o[0] == int(order_id))
+				parent_order_id = sub_order[6]
+				sub_orders = get_sub_orders(parent_order_id)
+				if all(o[1] == 'assembled' for o in sub_orders):
+					update_parent_order_status(parent_order_id, 'assembled')
+				log_action(session['user_id'], f'Order {order_id} marked as assembled by warehouseman')
+				flash('Order marked as assembled')
+			except Exception as e:
+				flash(f'Error marking order as assembled: {str(e)}')
+	
+	orders = get_warehouse_orders_for_user(session['user_id'])
+	return render_template('warehouseman_profile.html', orders=orders)
 
 if __name__ == '__main__':
 	if not os.path.exists(UPLOAD_FOLDER):
