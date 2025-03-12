@@ -118,7 +118,7 @@ def customer_profile():
 							(session['user_id'], request.form.get('delivery_address'), cart_array))
 					conn.commit()
 					flash('Order placed successfully')
-				except Exception as e:
+				except psycopg2.Error as e:
 					conn.rollback()
 					flash(f'Error placing order: {str(e)}')
 				finally:
