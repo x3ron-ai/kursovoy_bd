@@ -1,82 +1,76 @@
 {% extends "base.html" %}
 {% block content %}
 	<h1>Your Profile</h1>
-	
-	<div class="section">
-		<h2>Default Address</h2>
-		<form method="POST">
-			<input type="hidden" name="action" value="update_address">
-			<input type="text" name="default_address" value="{{ default_address or '' }}" placeholder="Enter default address">
-			<button type="submit">Update Address</button>
-		</form>
-	</div>
-	
-	<div class="section">
-		<h2>Cart</h2>
-		<table>
-			<tr>
-				<th>ID</th>
-				<th>Name</th>
-				<th>Price</th>
-				<th>Quantity</th>
-				<th>Action</th>
-			</tr>
-			{% for item in cart_items %}
-			<tr>
-				<td>{{ item[0] }}</td>
-				<td>{{ item[1] }}</td>
-				<td>{{ item[2] }}</td>
-				<td>{{ item[3] }}</td>
-				<td>
-					<form method="POST">
-						<input type="hidden" name="action" value="remove">
-						<input type="hidden" name="product_id" value="{{ item[0] }}">
-						<button type="submit" style="background-color: #f44336;">Remove</button>
-					</form>
-				</td>
-			</tr>
-			{% endfor %}
-		</table>
-		{% if cart_items %}
-		<form method="POST">
-			<input type="hidden" name="action" value="checkout">
-			<label for="delivery_address">Delivery Address:</label>
-			<input type="text" name="delivery_address" placeholder="Enter delivery address (optional)">
-			<button type="submit">Place Order</button>
-		</form>
-		{% endif %}
-	</div>
-	
-	<div class="section">
-		<h2>Your Orders</h2>
-		<table>
-			<tr>
-				<th>ID</th>
-				<th>Status</th>
-				<th>Total Price</th>
-				<th>Delivery Address</th>
-				<th>Created At</th>
-				<th>Action</th>
-			</tr>
-			{% for order in orders %}
-			<tr>
-				<td>{{ order[0] }}</td>
-				<td>{{ order[1] }}</td>
-				<td>{{ order[2] }}</td>
-				<td>{{ order[3] }}</td>
-				<td>{{ order[4] }}</td>
-				<td>
-					{% if order[1] == 'created' %}
-					<form method="POST">
-						<input type="hidden" name="action" value="pay">
-						<input type="hidden" name="order_id" value="{{ order[0] }}">
-						<button type="submit">Pay</button>
-					</form>
-					{% endif %}
-				</td>
-			</tr>
-			{% endfor %}
-		</table>
-	</div>
-	<a href="{{ url_for('index') }}" class="button">Back to Products</a>
+	<h2>Cart</h2>
+	<table>
+		<tr>
+			<th>ID</th>
+			<th>Name</th>
+			<th>Price</th>
+			<th>Quantity</th>
+			<th>Action</th>
+		</tr>
+		{% for item in cart_items %}
+		<tr>
+			<td>{{ item[0] }}</td>
+			<td>{{ item[1] }}</td>
+			<td>{{ item[2] }}</td>
+			<td>{{ item[3] }}</td>
+			<td>
+				<form method="POST">
+					<input type="hidden" name="action" value="remove">
+					<input type="hidden" name="product_id" value="{{ item[0] }}">
+					<button type="submit" style="background-color: #f44336;">Remove</button>
+				</form>
+			</td>
+		</tr>
+		{% endfor %}
+	</table>
+	{% if cart_items %}
+	<form method="POST">
+		<input type="hidden" name="action" value="checkout">
+		<input type="text" name="delivery_address" placeholder="Delivery Address" required>
+		<button type="submit">Place Order</button>
+	</form>
+	{% endif %}
+	<h2>Your Orders</h2>
+	<form method="GET">
+		<select name="status">
+			<option value="">All</option>
+			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>In Delivery</option>
+			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+		</select>
+		<button type="submit">Filter</button>
+	</form>
+	<table>
+		<tr>
+			<th>ID</th>
+			<th>Status</th>
+			<th>Total Price</th>
+			<th>Address</th>
+			<th>Created At</th>
+			<th>Action</th>
+		</tr>
+		{% for order in orders %}
+		<tr>
+			<td>{{ order[0] }}</td>
+			<td>{{ order[1] }}</td>
+			<td>{{ order[2] }}</td>
+			<td>{{ order[3] }}</td>
+			<td>{{ order[4] }}</td>
+			<td>
+				{% if order[1] == 'pending' %}
+				<form method="POST">
+					<input type="hidden" name="action" value="pay">
+					<input type="hidden" name="order_id" value="{{ order[0] }}">
+					<button type="submit">Pay</button>
+				</form>
+				{% endif %}
+			</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<a href="{{ url_for('index') }}" class="button">Back</a>
 {% endblock %}

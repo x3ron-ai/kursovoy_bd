@@ -1,23 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>All Orders</h1>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Status</th>
-            <th>Total Price</th>
-            <th>Created At</th>
-            <th>Customer</th>
-        </tr>
-        {% for order in orders %}
-        <tr>
-            <td>{{ order[0] }}</td>
-            <td>{{ order[1] }}</td>
-            <td>{{ order[2] }}</td>
-            <td>{{ order[3] }}</td>
-            <td>{{ order[4] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <a href="{{ url_for('admin_panel') }}">Back</a>
+	<h1>All Orders</h1>
+	<form method="GET">
+		<select name="status">
+			<option value="">All</option>
+			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>In Delivery</option>
+			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+		</select>
+		<button type="submit">Filter</button>
+	</form>
+	<table>
+		<tr>
+			<th>ID</th>
+			<th>Status</th>
+			<th>Total Price</th>
+			<th>Created At</th>
+			<th>Customer</th>
+		</tr>
+		{% for order in orders %}
+		<tr>
+			<td>{{ order[0] }}</td>
+			<td>{{ order[1] }}</td>
+			<td>{{ order[2] }}</td>
+			<td>{{ order[3] }}</td>
+			<td>{{ order[4] }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<a href="{{ url_for('admin_panel') }}" class="button">Back</a>
 {% endblock %}

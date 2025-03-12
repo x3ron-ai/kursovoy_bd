@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+	<h1>Action Logs</h1>
+	<form method="GET">
+		<input type="text" name="action" value="{{ action_filter }}" placeholder="Filter by action...">
+		<button type="submit">Filter</button>
+	</form>
+	<table>
+		<tr>
+			<th>ID</th>
+			<th>User</th>
+			<th>Action</th>
+			<th>Timestamp</th>
+		</tr>
+		{% for log in logs %}
+		<tr>
+			<td>{{ log[0] }}</td>
+			<td>{{ log[1] }}</td>
+			<td>{{ log[2] }}</td>
+			<td>{{ log[3] }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<a href="{{ url_for('admin_panel') }}" class="button">Back</a>
+{% endblock %}

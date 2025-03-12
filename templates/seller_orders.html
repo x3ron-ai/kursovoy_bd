@@ -1,13 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 	<h1>Your Orders</h1>
-	<table border="1">
+	<form method="GET">
+		<select name="status">
+			<option value="">All</option>
+			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>In Delivery</option>
+			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+		</select>
+		<button type="submit">Filter</button>
+	</form>
+	<table>
 		<tr>
 			<th>ID</th>
 			<th>Status</th>
 			<th>Total Price</th>
+			<th>Delivery Address</th>
 			<th>Created At</th>
 			<th>Customer</th>
+			<th>Products</th>
 		</tr>
 		{% for order in orders %}
 		<tr>
@@ -16,8 +28,10 @@
 			<td>{{ order[2] }}</td>
 			<td>{{ order[3] }}</td>
 			<td>{{ order[4] }}</td>
+			<td>{{ order[5] }}</td>
+			<td>{{ order[6]|join(', ') }}</td>
 		</tr>
 		{% endfor %}
 	</table>
-	<a href="{{ url_for('seller_profile') }}">Back</a>
+	<a href="{{ url_for('seller_profile') }}" class="button">Back</a>
 {% endblock %}

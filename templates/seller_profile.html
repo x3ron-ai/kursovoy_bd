@@ -1,161 +1,57 @@
 {% extends "base.html" %}
 {% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
 {% endblock %}
 {% block content %}
-    <h1>Seller Profile</h1>
-
-    <!-- Добавление нового склада -->
-    <div class="section">
-        <h2>Add Warehouse</h2>
-        <form method="POST">
-            <input type="hidden" name="action" value="add_warehouse">
-            <input type="text" name="address" placeholder="Warehouse address" required>
-            <button type="submit">Add Warehouse</button>
-        </form>
-    </div>
-
-    <!-- Добавление складмена -->
-    <div class="section">
-        <h2>Add Warehouseman</h2>
-        <form method="POST">
-            <input type="hidden" name="action" value="add_warehouseman">
-            <input type="text" name="name" placeholder="Name" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <select name="warehouse_id" required>
-                {% for warehouse in warehouses %}
-                <option value="{{ warehouse[0] }}">{{ warehouse[1] }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Add Warehouseman</button>
-        </form>
-    </div>
-
-    <!-- Список складов -->
-    <div class="section">
-        <h2>Warehouses</h2>
-        {% if warehouses %}
-        {% for warehouse in warehouses %}
-        <div>
-            <h3>Warehouse ID: {{ warehouse[0] }} - {{ warehouse[1] }}</h3>
-        </div>
-        {% endfor %}
-        {% else %}
-        <p>No warehouses found.</p>
-        {% endif %}
-    </div>
-
-    <!-- Добавление нового товара -->
-    <div class="section">
-        <h2>Add New Product</h2>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="action" value="add_product">
-            <input type="text" name="name" placeholder="Name" required>
-            <textarea name="description" placeholder="Description"></textarea>
-            <input type="number" name="price" step="0.01" placeholder="Price" required>
-            <input type="number" name="quantity" placeholder="Quantity" required>
-            <select name="warehouse_id" required>
-                {% for warehouse in warehouses %}
-                <option value="{{ warehouse[0] }}">{{ warehouse[1] }}</option>
-                {% endfor %}
-            </select>
-            <input type="file" name="images" multiple accept="image/*">
-            <input type="submit" value="Add Product">
-        </form>
-    </div>
-
-    <!-- Список товаров -->
-    <div class="section">
-        <h2>Your Products</h2>
-        <div class="products-grid">
-            {% if products %}
-            {% for product in products %}
-            <div class="product-card">
-                <h3>{{ product[1] }}</h3>
-                <p>{{ product[2] or 'No description' }}</p>
-                <p><strong>Price:</strong> ${{ product[3] }}</p>
-                <p><strong>Quantity:</strong> {{ product[4] }}</p>
-                <div class="images">
-                    {% if product[5] is not none %}
-                        {% for url in product[5] %}
-                        <img src="{{ url }}" alt="Product image" width="100">
-                        {% endfor %}
-                    {% else %}
-                        <p>No images available</p>
-                    {% endif %}
-                </div>
-                <form method="POST" enctype="multipart/form-data" class="edit-form">
-                    <input type="hidden" name="action" value="update_product">
-                    <input type="hidden" name="product_id" value="{{ product[0] }}">
-                    <input type="text" name="name" value="{{ product[1] }}" required>
-                    <textarea name="description">{{ product[2] or '' }}</textarea>
-                    <input type="number" name="price" step="0.01" value="{{ product[3] }}" required>
-                    <input type="number" name="quantity" value="{{ product[4] }}" required>
-                    <select name="warehouse_id" required>
-                        {% for warehouse in warehouses %}
-                        <option value="{{ warehouse[0] }}">{{ warehouse[1] }}</option>
-                        {% endfor %}
-                    </select>
-                    {% if product[5] is not none %}
-                        {% for url in product[5] %}
-                        <input type="hidden" name="existing_images" value="{{ url }}">
-                        {% endfor %}
-                    {% endif %}
-                    <input type="file" name="images" multiple accept="image/*">
-                    <input type="submit" value="Update">
-                </form>
-                <form method W "POST" onsubmit="return confirm('Are you sure you want to delete this product?');">
-                    <input type="hidden" name="action" value="delete_product">
-                    <input type="hidden" name="product_id" value="{{ product[0] }}">
-                    <button type="submit" style="background-color: #f44336;">Delete</button>
-                </form>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p>No products found.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Список заказов -->
-    <div class="section">
-        <h2>Orders</h2>
-        {% if orders %}
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Total Price</th>
-                <th>Delivery Address</th>
-                <th>Warehouse ID</th>
-                <th>Parent Order ID</th>
-                <th>Action</th>
-            </tr>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order[0] }}</td>
-                <td>{{ order[1] }}</td>
-                <td>{{ order[2] }}</td>
-                <td>{{ order[3] or 'Not specified' }}</td>
-                <td>{{ order[4] or 'N/A' }}</td>
-                <td>{{ order[6] or 'N/A' }}</td>
-                <td>
-                    {% if order[1] in ['paid', 'in assembly'] %}
-                    <form method="POST">
-                        <input type="hidden" name="action" value="mark_assembled">
-                        <input type="hidden" name="order_id" value="{{ order[0] }}">
-                        <button type="submit">Mark as Assembled</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}
-        <p>No orders found.</p>
-        {% endif %}
-    </div>
-
-    <a href="{{ url_for('index') }}" class="button">Back</a>
+	<h1>Seller Profile</h1>
+	<h2>Add Product</h2>
+	<form method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="action" value="add">
+		<input type="text" name="name" placeholder="Name" required>
+		<textarea name="description" placeholder="Description"></textarea>
+		<input type="number" name="price" step="0.01" placeholder="Price" required>
+		<input type="number" name="quantity" placeholder="Quantity" required>
+		<input type="file" name="images" multiple>
+		<input type="submit" value="Add Product">
+	</form>
+	<h2>Your Products</h2>
+	<form method="GET">
+		<input type="text" name="search" value="{{ search }}" placeholder="Search your products...">
+		<button type="submit">Search</button>
+	</form>
+	<div class="products-grid">
+		{% for product in products %}
+		<div class="product-card">
+			<h3>{{ product[1] }}</h3>
+			<p>{{ product[2] }}</p>
+			<p><strong>Price:</strong> ${{ product[3] }}</p>
+			<p><strong>Quantity:</strong> {{ product[4] }}</p>
+			<div class="images">
+				{% for url in product[5] %}
+					<img src="/{{ url }}" alt="Product image">
+				{% endfor %}
+			</div>
+			<form method="POST" enctype="multipart/form-data">
+				<input type="hidden" name="action" value="edit">
+				<input type="hidden" name="product_id" value="{{ product[0] }}">
+				<input type="text" name="name" value="{{ product[1] }}" required>
+				<textarea name="description">{{ product[2] }}</textarea>
+				<input type="number" name="price" step="0.01" value="{{ product[3] }}" required>
+				<input type="number" name="quantity" value="{{ product[4] }}" required>
+				{% for url in product[5] %}
+					<input type="hidden" name="existing_images" value="{{ url }}">
+				{% endfor %}
+				<input type="file" name="images" multiple>
+				<input type="submit" value="Update">
+			</form>
+			<form method="POST">
+				<input type="hidden" name="action" value="delete">
+				<input type="hidden" name="product_id" value="{{ product[0] }}">
+				<button type="submit" style="background-color: #f44336;">Delete</button>
+			</form>
+		</div>
+		{% endfor %}
+	</div>
+	<a href="{{ url_for('seller_orders') }}" class="button">View Orders</a>
+	<a href="{{ url_for('index') }}" class="button">Back</a>
 {% endblock %}

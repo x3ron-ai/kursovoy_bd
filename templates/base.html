@@ -18,8 +18,6 @@
 					<a href="{{ url_for('seller_profile') }}">Seller Profile</a>
 				{% elif session.role == 'courier' %}
 					<a href="{{ url_for('courier_orders') }}">Courier Orders</a>
-				{% elif session.role == 'warehouseman' %}
-					<a href="{{ url_for('warehouseman_profile') }}">Warehouseman Profile</a>
 				{% endif %}
 				<a href="{{ url_for('logout') }}">Logout</a>
 			{% endif %}

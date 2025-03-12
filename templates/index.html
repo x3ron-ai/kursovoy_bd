@@ -3,32 +3,32 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
 {% endblock %}
 {% block content %}
-	<h1>Products</h1>
+	<h1>Available Products</h1>
+	<p>Hello, {{ name }}! Your role is: {{ role }}</p>
+	<form method="GET">
+		<input type="text" name="search" value="{{ search }}" placeholder="Search products...">
+		<button type="submit">Search</button>
+	</form>
 	<div class="products-grid">
 		{% for product in products %}
 		<div class="product-card">
 			<h3>{{ product[1] }}</h3>
-			<p>{{ product[2] or 'No description' }}</p>
+			<p>{{ product[2] }}</p>
 			<p><strong>Price:</strong> ${{ product[3] }}</p>
 			<p><strong>Quantity:</strong> {{ product[4] }}</p>
 			<div class="images">
-				{% if product[5] is not none %}
-					{% for url in product[5] %}
-					<img src="{{ url }}" alt="Product image" width="100">
-					{% endfor %}
-				{% else %}
-					<p>No images available</p>
-				{% endif %}
+				{% for url in product[5] %}
+					<img src="/{{ url }}" alt="Product image">
+				{% endfor %}
 			</div>
 			<p><strong>Seller:</strong> {{ product[6] }}</p>
 			{% if session.role == 'customer' %}
-			<form action="{{ url_for('index') }}" method="POST">
+			<form method="POST">
 				<input type="hidden" name="product_id" value="{{ product[0] }}">
 				<input type="number" name="quantity" value="1" min="1" style="width: 60px;">
 				<button type="submit">Add to Cart</button>
 			</form>
 			{% endif %}
-			</div>
 		</div>
 		{% endfor %}
 	</div>

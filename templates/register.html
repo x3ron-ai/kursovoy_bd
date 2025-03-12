@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Register</h1>
-    <form method="POST">
-        <input type="text" name="name" placeholder="Name" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <select name="role">
-            <option value="customer">Customer</option>
-            <option value="seller">Seller</option>
-            <option value="courier">Courier</option>
-        </select>
-        <input type="submit" value="Register">
-    </form>
-    <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+	<h1>Register</h1>
+	<form method="POST">
+		<input type="text" name="name" placeholder="Name" required>
+		<input type="email" name="email" placeholder="Email" required>
+		<input type="password" name="password" placeholder="Password" required>
+		<select name="role">
+			<option value="customer">Customer</option>
+			<option value="seller">Seller</option>
+			<option value="courier">Courier</option>
+			<option value="admin">Admin</option>
+		</select>
+		<input type="submit" value="Register">
+	</form>
 {% endblock %}
