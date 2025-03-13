@@ -3,21 +3,21 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
 {% endblock %}
 {% block content %}
-	<h1>Seller Profile</h1>
-	<h2>Add Product</h2>
+	<h1>Профиль продавца</h1>
+	<h2>Добавление товара</h2>
 	<form method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="action" value="add">
-		<input type="text" name="name" placeholder="Name" required>
-		<textarea name="description" placeholder="Description"></textarea>
-		<input type="number" name="price" step="0.01" placeholder="Price" required>
-		<input type="number" name="quantity" placeholder="Quantity" required>
+		<input type="text" name="name" placeholder="Название" required>
+		<textarea name="description" placeholder="Описание"></textarea>
+		<input type="number" name="price" step="0.01" placeholder="Цена" required>
+		<input type="number" name="quantity" placeholder="Количество" required>
 		<input type="file" name="images" multiple>
-		<input type="submit" value="Add Product">
+		<input type="submit" value="Добавить товар">
 	</form>
 	<h2>Your Products</h2>
 	<form method="GET">
-		<input type="text" name="search" value="{{ search }}" placeholder="Search your products...">
-		<button type="submit">Search</button>
+		<input type="text" name="search" value="{{ search }}" placeholder="Поиск товаров...">
+		<button type="submit">Поиск</button>
 	</form>
 	<div class="products-grid">
 		{% for product in products %}
@@ -28,7 +28,7 @@
 			<p><strong>Quantity:</strong> {{ product[4] }}</p>
 			<div class="images">
 				{% for url in product[5] %}
-					<img src="/{{ url }}" alt="Product image">
+					<img src="/{{ url }}" alt="картенка)0">
 				{% endfor %}
 			</div>
 			<form method="POST" enctype="multipart/form-data">
@@ -47,11 +47,12 @@
 			<form method="POST">
 				<input type="hidden" name="action" value="delete">
 				<input type="hidden" name="product_id" value="{{ product[0] }}">
-				<button type="submit" style="background-color: #f44336;">Delete</button>
+				<button type="submit" style="background-color: #f44336;">Удалить</button>
 			</form>
 		</div>
 		{% endfor %}
 	</div>
-	<a href="{{ url_for('seller_orders') }}" class="button">View Orders</a>
-	<a href="{{ url_for('index') }}" class="button">Back</a>
+	<a href="{{ url_for('seller_orders') }}" class="button">Просмотр заказов</a>
+	<a href="{{ url_for('index') }}" class="button">Вернуться</a>
 {% endblock %}
+

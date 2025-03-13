@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-	<h1>Your Profile</h1>
-	<h2>Cart</h2>
+	<h1>Ваш профиль</h1>
+	<h2>Корзина</h2>
 	<table>
 		<tr>
 			<th>ID</th>
-			<th>Name</th>
-			<th>Price</th>
+			<th>Название</th>
+			<th>Цена</th>
 			<th>Quantity</th>
 			<th>Action</th>
 		</tr>
@@ -20,7 +20,7 @@
 				<form method="POST">
 					<input type="hidden" name="action" value="remove">
 					<input type="hidden" name="product_id" value="{{ item[0] }}">
-					<button type="submit" style="background-color: #f44336;">Remove</button>
+					<button type="submit" style="background-color: #f44336;">Убрать</button>
 				</form>
 			</td>
 		</tr>
@@ -30,28 +30,28 @@
 	<form method="POST">
 		<input type="hidden" name="action" value="checkout">
 		<input type="text" name="delivery_address" placeholder="Delivery Address" required>
-		<button type="submit">Place Order</button>
+		<button type="submit">Оформить заказ</button>
 	</form>
 	{% endif %}
 	<h2>Your Orders</h2>
 	<form method="GET">
 		<select name="status">
-			<option value="">All</option>
-			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
-			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>In Delivery</option>
-			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+			<option value="">Все</option>
+			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>В ожидании</option>
+			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Оплачен</option>
+			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>В доставке</option>
+			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Выполнен</option>
 		</select>
-		<button type="submit">Filter</button>
+		<button type="submit">Отфильтровать</button>
 	</form>
 	<table>
 		<tr>
 			<th>ID</th>
-			<th>Status</th>
-			<th>Total Price</th>
-			<th>Address</th>
-			<th>Created At</th>
-			<th>Action</th>
+			<th>Статус</th>
+			<th>Итоговая цена</th>
+			<th>Адрес</th>
+			<th>Создан в</th>
+			<th>Действие</th>
 		</tr>
 		{% for order in orders %}
 		<tr>
@@ -65,12 +65,13 @@
 				<form method="POST">
 					<input type="hidden" name="action" value="pay">
 					<input type="hidden" name="order_id" value="{{ order[0] }}">
-					<button type="submit">Pay</button>
+					<button type="submit">Оплатить</button>
 				</form>
 				{% endif %}
 			</td>
 		</tr>
 		{% endfor %}
 	</table>
-	<a href="{{ url_for('index') }}" class="button">Back</a>
+	<a href="{{ url_for('index') }}" class="button">Вернуться</a>
 {% endblock %}
+

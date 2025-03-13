@@ -7,10 +7,10 @@
 			<th>ID</th>
 			<th>Статус заказа</th>
 			<th>Полная стоимость</th>
-			<th>Delivery Address</th>
-			<th>Delivery Status</th>
-			<th>Estimated Delivery</th>
-			<th>Action</th>
+			<th>Адрес доставки</th>
+			<th>Статус доставки</th>
+			<th>Время доставки</th>
+			<th>Действие</th>
 		</tr>
 		{% for order in active_orders %}
 		<tr>
@@ -25,29 +25,29 @@
 					<input type="hidden" name="action" value="update_status">
 					<input type="hidden" name="order_id" value="{{ order[0] }}">
 					<select name="new_status">
-						<option value="in transit">In Transit</option>
-						<option value="delivered">Delivered</option>
+						<option value="in transit">В доставки</option>
+						<option value="delivered">Доставлен</option>
 					</select>
-					<button type="submit">Update</button>
+					<button type="submit">Обновить</button>
 				</form>
 				<form method="POST">
 					<input type="hidden" name="action" value="cancel">
 					<input type="hidden" name="order_id" value="{{ order[0] }}">
 					<input type="text" name="reason" placeholder="Cancel reason" required>
-					<button type="submit" style="background-color: #f44336;">Cancel</button>
+					<button type="submit" style="background-color: #f44336;">Отмена заказа</button>
 				</form>
 			</td>
 		</tr>
 		{% endfor %}
 	</table>
-	<h2>Available Orders</h2>
+	<h2>Доступные заказы</h2>
 	<table>
 		<tr>
 			<th>ID</th>
-			<th>Status</th>
-			<th>Total Price</th>
-			<th>Delivery Address</th>
-			<th>Action</th>
+			<th>Статус</th>
+			<th>Цена</th>
+			<th>Адрес доставки</th>
+			<th>Действие</th>
 		</tr>
 		{% for order in available_orders %}
 		<tr>
@@ -60,7 +60,7 @@
 					<input type="hidden" name="action" value="assign">
 					<input type="hidden" name="order_id" value="{{ order[0] }}">
 					<input type="datetime-local" name="estimated_delivery" required>
-					<button type="submit">Take Order</button>
+					<button type="submit">Взять заказ</button>
 				</form>
 			</td>
 		</tr>
@@ -68,3 +68,4 @@
 	</table>
 	<a href="{{ url_for('index') }}" class="button">Back</a>
 {% endblock %}
+

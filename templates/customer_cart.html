@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Your Cart</h1>
+    <h1>Ваша корзина</h1>
     <table border="1">
         <tr>
             <th>ID</th>
-            <th>Name</th>
-            <th>Price</th>
-            <th>Quantity</th>
+            <th>Название товара</th>
+            <th>Цена</th>
+            <th>Количество</th>
         </tr>
         {% for item in cart_items %}
         <tr>
@@ -19,3 +19,4 @@
     </table>
     <a href="{{ url_for('index') }}">Back</a>
 {% endblock %}
+

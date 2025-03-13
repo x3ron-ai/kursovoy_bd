@@ -3,11 +3,11 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
 {% endblock %}
 {% block content %}
-	<h1>Available Products</h1>
-	<p>Hello, {{ name }}! Your role is: {{ role }}</p>
+	<h1>Доступные товары</h1>
+	<p>Здравствуйте, {{ name }}! Ваша роль: {{ role }}</p>
 	<form method="GET">
-		<input type="text" name="search" value="{{ search }}" placeholder="Search products...">
-		<button type="submit">Search</button>
+		<input type="text" name="search" value="{{ search }}" placeholder="Поиск товаров...">
+		<button type="submit">Поиск</button>
 	</form>
 	<div class="products-grid">
 		{% for product in products %}
@@ -26,10 +26,11 @@
 			<form method="POST">
 				<input type="hidden" name="product_id" value="{{ product[0] }}">
 				<input type="number" name="quantity" value="1" min="1" style="width: 60px;">
-				<button type="submit">Add to Cart</button>
+				<button type="submit">Добавить в корзину</button>
 			</form>
 			{% endif %}
 		</div>
 		{% endfor %}
 	</div>
 {% endblock %}
+

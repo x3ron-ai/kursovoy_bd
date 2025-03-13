@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-	<h1>Your Orders</h1>
+	<h1>Ваши заказы</h1>
 	<form method="GET">
 		<select name="status">
-			<option value="">All</option>
-			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
-			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>In Delivery</option>
-			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+			<option value="">Все</option>
+			<option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>В ожидании</option>
+			<option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Оплачен</option>
+			<option value="in_delivery" {% if status_filter == 'in_delivery' %}selected{% endif %}>В доставке</option>
+			<option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Выполнен</option>
 		</select>
-		<button type="submit">Filter</button>
+		<button type="submit">Отфильтровать</button>
 	</form>
 	<table>
 		<tr>
 			<th>ID</th>
-			<th>Status</th>
-			<th>Total Price</th>
-			<th>Delivery Address</th>
-			<th>Created At</th>
-			<th>Customer</th>
-			<th>Products</th>
+			<th>Статус</th>
+			<th>Итоговая цена</th>
+			<th>Адрес доставки</th>
+			<th>Создан в</th>
+			<th>Покупатель</th>
+			<th>Товары</th>
 		</tr>
 		{% for order in orders %}
 		<tr>
@@ -33,5 +33,6 @@
 		</tr>
 		{% endfor %}
 	</table>
-	<a href="{{ url_for('seller_profile') }}" class="button">Back</a>
+	<a href="{{ url_for('seller_profile') }}" class="button">Вернуться</a>
 {% endblock %}
+

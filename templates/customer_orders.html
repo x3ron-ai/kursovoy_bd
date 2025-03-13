@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Your Orders</h1>
+    <h1>Ваши заказы</h1>
     <table border="1">
         <tr>
             <th>ID</th>
-            <th>Status</th>
-            <th>Total Price</th>
-            <th>Created At</th>
+            <th>Статус</th>
+            <th>Итоговая цена</th>
+            <th>Создан в</th>
         </tr>
         {% for order in orders %}
         <tr>
@@ -19,3 +19,4 @@
     </table>
     <a href="{{ url_for('index') }}">Back</a>
 {% endblock %}
+
