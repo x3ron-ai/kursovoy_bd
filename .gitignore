@@ -1,4 +1,5 @@
 .env
 __pycache__/
-*.service
+food_delivery.service
+start.sh
 *.sh
