@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Order Management System</title>
+	<title>Система управления заказами</title>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 	{% block styles %}{% endblock %}
 </head>
 <body>
 	<div class="container">
 		<header>
-			<span>Order Management System</span>
+			<span>Система управления заказами</span>
 			{% if session.user_id %}
 				{% if session.role == 'customer' %}
-					<a href="{{ url_for('customer_profile') }}">Profile</a>
+					<a href="{{ url_for('customer_profile') }}">Профиль</a>
 				{% elif session.role == 'admin' %}
-					<a href="{{ url_for('admin_panel') }}">Admin Panel</a>
+					<a href="{{ url_for('admin_panel') }}">Панель администратора</a>
 				{% elif session.role == 'seller' %}
-					<a href="{{ url_for('seller_profile') }}">Seller Profile</a>
+					<a href="{{ url_for('seller_profile') }}">Профиль продавца</a>
 				{% elif session.role == 'courier' %}
-					<a href="{{ url_for('courier_orders') }}">Courier Orders</a>
+					<a href="{{ url_for('courier_orders') }}">Страница курьера</a>
 				{% endif %}
-				<a href="{{ url_for('logout') }}">Logout</a>
+				<a href="{{ url_for('logout') }}">Выход</a>
 			{% endif %}
 		</header>
 		<div class="flash-messages">

@@ -1,0 +1,12 @@
+[Unit]
+Description=CHIHPYH
+After=network.target
+
+[Service]
+User=x3ron
+Group=www-data
+WorkingDirectory=/home/x3ron/food_delivery
+ExecStart=bash /home/x3ron/food_delivery/start.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-	<h1>Admin Panel</h1>
-	<p><a href="{{ url_for('admin_products') }}" class="button">Manage Products</a></p>
-	<p><a href="{{ url_for('admin_orders') }}" class="button">View Orders</a></p>
-	<p><a href="{{ url_for('admin_logs') }}" class="button">View Logs</a></p>
-	<a href="{{ url_for('index') }}" class="button">Back</a>
+	<h1>Панель администратора</h1>
+	<p><a href="{{ url_for('admin_products') }}" class="button">Управление товаром</a></p>
+	<p><a href="{{ url_for('admin_orders') }}" class="button">Просмотр заказов</a></p>
+	<p><a href="{{ url_for('admin_logs') }}" class="button">Просмотр логов</a></p>
+	<a href="{{ url_for('index') }}" class="button">Вернуться</a>
 {% endblock %}

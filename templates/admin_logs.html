@@ -2,15 +2,15 @@
 {% block content %}
 	<h1>Action Logs</h1>
 	<form method="GET">
-		<input type="text" name="action" value="{{ action_filter }}" placeholder="Filter by action...">
-		<button type="submit">Filter</button>
+		<input type="text" name="action" value="{{ action_filter }}" placeholder="Фильтрация по действию...">
+		<button type="submit">Фильтрация</button>
 	</form>
 	<table>
 		<tr>
 			<th>ID</th>
-			<th>User</th>
-			<th>Action</th>
-			<th>Timestamp</th>
+			<th>Пользователь</th>
+			<th>Действие</th>
+			<th>Время</th>
 		</tr>
 		{% for log in logs %}
 		<tr>
@@ -21,5 +21,5 @@
 		</tr>
 		{% endfor %}
 	</table>
-	<a href="{{ url_for('admin_panel') }}" class="button">Back</a>
+	<a href="{{ url_for('admin_panel') }}" class="button">Назад</a>
 {% endblock %}
