@@ -150,6 +150,7 @@ def admin_products():
 			description = request.form.get('description')
 			price = float(request.form.get('price'))
 			quantity = int(request.form.get('quantity'))
+			seller_id = int(request.form.get('seller_id'))  # Получаем seller_id из формы
 			files = request.files.getlist('images')
 			image_urls = []
 			for f in files:
@@ -158,7 +159,7 @@ def admin_products():
 					file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 					f.save(file_path)
 					image_urls.append(file_path)
-			add_product(name, description, price, quantity, image_urls, None)
+			add_product(name, description, price, quantity, image_urls, seller_id)  # Передаём seller_id
 			flash('Product added')
 		elif action == 'edit':
 			product_id = request.form.get('product_id')
@@ -181,7 +182,14 @@ def admin_products():
 			delete_product(product_id)
 			flash('Product deleted')
 	products = get_all_products(search)
-	return render_template('admin_products.html', products=products, search=search)
+	# Получаем список продавцов
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("SELECT id, name FROM users WHERE role = 'seller'")
+	sellers = cur.fetchall()
+	cur.close()
+	conn.close()
+	return render_template('admin_products.html', products=products, search=search, sellers=sellers)
 
 @app.route('/admin/orders')
 @login_required('admin')

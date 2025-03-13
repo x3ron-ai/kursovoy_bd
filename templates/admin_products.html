@@ -11,6 +11,12 @@
 		<textarea name="description" placeholder="Description"></textarea>
 		<input type="number" name="price" step="0.01" placeholder="Price" required>
 		<input type="number" name="quantity" placeholder="Quantity" required>
+		<select name="seller_id" required>
+			<option value="" disabled selected>Выберите продавца</option>
+			{% for seller in sellers %}
+				<option value="{{ seller[0] }}">{{ seller[1] }}</option>
+			{% endfor %}
+		</select>
 		<input type="file" name="images" multiple>
 		<input type="submit" value="Add Product">
 	</form>
