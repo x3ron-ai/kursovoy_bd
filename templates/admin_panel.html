@@ -2,7 +2,7 @@
 {% block content %}
 	<h1>Панель администратора</h1>
 	<p><a href="{{ url_for('admin_products') }}" class="button">Управление товаром</a></p>
-	<a href="{{ url_for('admin_users') }}" class="btn btn-primary">Управление пользователями</a>
+	<p><a href="{{ url_for('admin_users') }}" class="button">Управление пользователями</a></p>
 	<p><a href="{{ url_for('admin_orders') }}" class="button">Просмотр заказов</a></p>
 	<p><a href="{{ url_for('admin_logs') }}" class="button">Просмотр логов</a></p>
 	<p><a href="{{ url_for('admin_backup') }}" class="button">Загрузка бекапа базы данных</a></p>

@@ -460,6 +460,7 @@ COPY public.delivery (order_id, courier_id, status, estimated_delivery, delivere
 2	3	delivered	2025-03-12 19:32:00	2025-03-13 09:02:02.01308	Я забыл куда ехать
 4	3	delivered	2025-03-14 16:15:00	2025-03-13 09:12:51.746001	\N
 3	5	assigned	2025-02-21 12:12:00	\N	\N
+6	3	assigned	2025-04-14 12:00:00	\N	\N
 \.
 
 
@@ -616,6 +617,31 @@ COPY public.logs (id, user_id, action, "timestamp") FROM stdin;
 148	6	User продавец 2 logged in	2025-03-13 21:57:42.269783
 149	4	User Админ logged in	2025-03-13 23:19:07.665748
 150	4	User Админ logged in	2025-03-13 23:19:57.309072
+151	4	User logged out	2025-03-13 23:26:35.514826
+152	1	User Покупатель logged in	2025-03-13 23:27:19.186432
+153	1	Added 1 of product 4 to cart	2025-03-13 23:30:25.622528
+154	2	Updated product: админка	2025-03-13 23:32:07.001734
+155	1	Created order 6	2025-03-13 23:32:07.001734
+156	1	User logged out	2025-03-13 23:32:39.730919
+157	1	User Покупатель logged in	2025-03-13 23:33:02.315715
+158	1	Order 6 paid	2025-03-13 23:33:32.843322
+159	1	User logged out	2025-03-13 23:33:37.176433
+160	3	User Курьер logged in	2025-03-13 23:33:56.396166
+161	3	Assigned delivery for order 6	2025-03-13 23:38:21.712677
+162	3	User logged out	2025-03-13 23:39:40.079116
+163	4	User Админ logged in	2025-03-13 23:39:43.039279
+164	4	User logged out	2025-03-13 23:45:21.071457
+165	2	User Продавец logged in	2025-03-13 23:45:25.175791
+166	4	User Админ logged in	2025-03-14 09:37:00.774462
+167	4	User Админ logged in	2025-03-14 09:38:24.284562
+168	4	User Админ logged in	2025-03-14 09:40:30.304457
+169	4	User Админ logged in	2025-03-14 09:43:16.84153
+170	4	User Админ logged in	2025-03-14 09:45:50.388777
+171	4	Admin deleted user with ID 9	2025-03-14 09:45:57.348558
+172	4	Admin deleted user with ID 8	2025-03-14 09:46:00.090375
+173	4	Admin deleted user with ID 7	2025-03-14 09:46:01.082216
+174	4	Admin added user чиназес with ID 10	2025-03-14 09:46:16.758774
+175	4	Admin deleted user with ID 10	2025-03-14 09:46:18.69578
 \.
 
 
@@ -629,6 +655,7 @@ COPY public.order_items (order_id, product_id, quantity, price) FROM stdin;
 4	2	4	12.0
 5	1	1	200.0
 5	6	1	12.0
+6	4	1	12.0
 \.
 
 
@@ -641,6 +668,7 @@ COPY public.orders (id, user_id, total_price, delivery_address, status, created_
 4	1	48.0	оляолфаволфарглф пшлпкффпк гшфпкгщшф пшлфп	completed	2025-03-13 09:12:04.880784
 3	1	147744.0	нежинская улица дом 7	in_delivery	2025-03-13 09:04:37.417466
 5	1	212.0	адрес	paid	2025-03-13 11:05:07.781278
+6	1	12.0	АДРЕС	in_delivery	2025-03-13 23:32:07.001734
 \.
 
 
@@ -650,10 +678,10 @@ COPY public.orders (id, user_id, total_price, delivery_address, status, created_
 
 COPY public.products (id, name, description, price, quantity, image_urls, seller_id) FROM stdin;
 2	asd	asd	12.0	8	{static/uploads/IMG_20250130_134217.jpg}	2
-4	админка	описание	12.0	12	{static/uploads/photo_2024-11-15_21-06-27.jpg}	2
 5	тестирование	описание	12.0	12	{static/uploads/image.png}	2
 1	Консервированный горох	горох гороророшек	200.0	10570	{static/uploads/photo_2024-11-15_21-06-27.jpg}	2
 6	продавец2	описание	12.0	11	{static/uploads/20240806_155303.jpg}	6
+4	админка	описание	12.0	11	{static/uploads/photo_2024-11-15_21-06-27.jpg}	2
 \.
 
 
@@ -685,14 +713,14 @@ COPY public.users (id, name, email, password, role) FROM stdin;
 -- Name: logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: x3ron
 --
 
-SELECT pg_catalog.setval('public.logs_id_seq', 150, true);
+SELECT pg_catalog.setval('public.logs_id_seq', 175, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: x3ron
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 5, true);
+SELECT pg_catalog.setval('public.orders_id_seq', 6, true);
 
 
 --
@@ -713,7 +741,7 @@ SELECT pg_catalog.setval('public.sessions_id_seq', 2, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: x3ron
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 6, true);
+SELECT pg_catalog.setval('public.users_id_seq', 10, true);
 
 
 --

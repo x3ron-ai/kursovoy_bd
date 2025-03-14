@@ -1,72 +1,43 @@
 {% extends "base.html" %}
-
+{% block styles %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/products.css') }}">
+{% endblock %}
 {% block content %}
-	<h1>Manage Users</h1>
+	<h1>Управление пользователями</h1>
 
-	{% with messages = get_flashed_messages() %}
-		{% if messages %}
-			{% for message in messages %}
-				<div class="alert alert-info">{{ message }}</div>
-			{% endfor %}
-		{% endif %}
-	{% endwith %}
-
-	<h2>Add New User</h2>
+	<!-- Форма добавления пользователя -->
+	<h2>Добавление пользователя</h2>
 	<form method="POST">
 		<input type="hidden" name="action" value="add">
-		<div class="form-group">
-			<label for="name">Имя:</label>
-			<input type="text" id="name" name="name" class="form-control" required>
-		</div>
-		<div class="form-group">
-			<label for="email">Email:</label>
-			<input type="email" id="email" name="email" class="form-control" required>
-		</div>
-		<div class="form-group">
-			<label for="password">Пароль:</label>
-			<input type="password" id="password" name="password" class="form-control" required>
-		</div>
-		<div class="form-group">
-			<label for="role">Роль:</label>
-			<select id="role" name="role" class="form-control" required>
-				<option value="admin">Администратор</option>
-				<option value="customer">Покупатель</option>
-				<option value="seller">Продавец</option>
-				<option value="courier">Курьер</option>
-			</select>
-		</div>
-		<button type="submit" class="btn btn-primary">Добавить пользователя</button>
+		<input type="text" name="name" placeholder="Name" required>
+		<input type="email" name="email" placeholder="Email" required>
+		<input type="password" name="password" placeholder="Password" required>
+		<select name="role" required>
+			<option value="" disabled selected>Выберите роль</option>
+			<option value="admin">Admin</option>
+			<option value="customer">Customer</option>
+			<option value="seller">Seller</option>
+			<option value="courier">Courier</option>
+		</select>
+		<input type="submit" value="Add User">
 	</form>
 
-	<h2>All Users</h2>
-	<table class="table table-striped">
-		<thead>
-			<tr>
-				<th>ID</th>
-				<th>Имя</th>
-				<th>Email</th>
-				<th>Роль</th>
-				<th>Действие</th>
-			</tr>
-		</thead>
-		<tbody>
-			{% for user in users %}
-				<tr>
-					<td>{{ user[0] }}</td>
-					<td>{{ user[1] }}</td>
-					<td>{{ user[2] }}</td>
-					<td>{{ user[3] }}</td>
-					<td>
-						<form method="POST" style="display:inline;">
-							<input type="hidden" name="action" value="delete">
-							<input type="hidden" name="user_id" value="{{ user[0] }}">
-							<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Удалить</button>
-						</form>
-					</td>
-				</tr>
-			{% endfor %}
-		</tbody>
-	</table>
+	<!-- Таблица пользователей -->
+	<h2>Пользователи</h2>
+	<div class="products-grid">
+		{% for user in users %}
+		<div class="product-card">
+			<h3>{{ user[1] }}</h3> <!-- Name -->
+			<p><strong>Email:</strong> {{ user[2] }}</p> <!-- Email -->
+			<p><strong>Роль:</strong> {{ user[3] }}</p> <!-- Role -->
+			<form method="POST">
+				<input type="hidden" name="action" value="delete">
+				<input type="hidden" name="user_id" value="{{ user[0] }}"> <!-- ID -->
+				<button type="submit" style="background-color: #f44336;">Удалить</button>
+			</form>
+		</div>
+		{% endfor %}
+	</div>
 
-	<a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Вернуться в панель администратора</a>
+	<a href="{{ url_for('admin_panel') }}" class="button">Вернуться</a>
 {% endblock %}

@@ -264,9 +264,9 @@ def get_active_courier_orders(courier_id):
 	cur = conn.cursor()
 	cur.execute("""
 		SELECT o.id, o.status, o.total_price, o.delivery_address, d.status, d.estimated_delivery 
-		FROM orders o 
-		JOIN delivery d ON o.id = d.order_id 
-		WHERE d.courier_id = %s AND d.status != 'delivered'
+		FROM orders o
+		JOIN delivery d ON o.id = d.order_id
+		WHERE d.courier_id = %s AND d.status NOT IN ('delivered', 'cancelled')
 	""", (courier_id,))
 	result = cur.fetchall()
 	cur.close()

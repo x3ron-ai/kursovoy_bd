@@ -1,5 +1,4 @@
 from flask import Flask, request, render_template, redirect, url_for, session, flash, send_file
-from prometheus_flask_exporter import PrometheusMetrics, Gauge
 import hashlib
 import os
 from datetime import datetime
@@ -13,7 +12,8 @@ from db import (
 	get_cart_for_checkout, get_user_orders, get_all_orders, get_seller_orders,
 	update_order_status, assign_order_to_courier, get_active_courier_orders,
 	get_available_orders, update_delivery_status, check_courier_assignment,
-	cancel_delivery, log_action, get_logs, load_db_dump
+	cancel_delivery, log_action, get_logs, load_db_dump, get_all_users,
+	delete_user
 )
 
 app = Flask(__name__)
@@ -22,7 +22,6 @@ app = Flask(__name__)
 
 
 
-metrics = PrometheusMetrics(app, path=None)
 
 
 
@@ -80,7 +79,7 @@ def register():
 			flash('Email already exists')
 		else:
 			user_id = create_user(name, email, password, role)
-			log_action(user_id, f"User {name} registered")
+			log_action(session['user_id'], f"User {name} registered")
 			flash('Registration successful! Please login.')
 			return redirect(url_for('login'))
 	return render_template('register.html')
@@ -172,12 +171,12 @@ def admin_users():
 				flash('Email already exists')
 			else:
 				user_id = create_user(name, email, password, role)
-				log_action(request.user_id, f"Admin added user {name} with ID {user_id}")
+				log_action(session['user_id'], f"Admin added user {name} with ID {user_id}")
 				flash('User added successfully')
 		elif action == 'delete':
 			user_id = request.form.get('user_id')
 			delete_user(user_id)
-			log_action(request.user_id, f"Admin deleted user with ID {user_id}")
+			log_action(session['user_id'], f"Admin deleted user with ID {user_id}")
 			flash('User deleted successfully')
 	users = get_all_users()
 	return render_template('admin_users.html', users=users)
