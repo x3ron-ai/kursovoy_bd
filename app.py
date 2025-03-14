@@ -1,8 +1,10 @@
-from flask import Flask, request, render_template, redirect, url_for, session, flash
+from flask import Flask, request, render_template, redirect, url_for, session, flash, send_file
+from prometheus_flask_exporter import PrometheusMetrics, Gauge
 import hashlib
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
+import subprocess
 from db import (
 	get_db_connection, get_user_by_email, create_user, get_user_by_credentials,
 	get_user_info, get_all_products, get_products_by_seller, add_product,
@@ -11,10 +13,21 @@ from db import (
 	get_cart_for_checkout, get_user_orders, get_all_orders, get_seller_orders,
 	update_order_status, assign_order_to_courier, get_active_courier_orders,
 	get_available_orders, update_delivery_status, check_courier_assignment,
-	cancel_delivery, log_action, get_logs
+	cancel_delivery, log_action, get_logs, load_db_dump
 )
 
 app = Flask(__name__)
+
+########### МЕТРИКИ ###########
+
+
+
+metrics = PrometheusMetrics(app, path=None)
+
+
+
+
+########### МЕТРИКИ ###########
 app.secret_key = os.urandom(16)
 
 UPLOAD_FOLDER = 'static/uploads'
@@ -138,6 +151,36 @@ def customer_profile():
 @login_required('admin')
 def admin_panel():
 	return render_template('admin_panel.html')
+
+@app.route('/admin/backup', methods=['GET'])
+@login_required('admin')
+def admin_backup():
+	load_db_dump()
+	return send_file('backup.dump', as_attachment=True)
+
+@app.route('/admin/users', methods=['GET', 'POST'])
+@login_required('admin')
+def admin_users():
+	if request.method == 'POST':
+		action = request.form.get('action')
+		if action == 'add':
+			name = request.form.get('name')
+			email = request.form.get('email')
+			password = hashlib.sha256(request.form.get('password').encode()).hexdigest()  # Хешируем пароль
+			role = request.form.get('role')
+			if get_user_by_email(email):
+				flash('Email already exists')
+			else:
+				user_id = create_user(name, email, password, role)
+				log_action(request.user_id, f"Admin added user {name} with ID {user_id}")
+				flash('User added successfully')
+		elif action == 'delete':
+			user_id = request.form.get('user_id')
+			delete_user(user_id)
+			log_action(request.user_id, f"Admin deleted user with ID {user_id}")
+			flash('User deleted successfully')
+	users = get_all_users()
+	return render_template('admin_users.html', users=users)
 
 @app.route('/admin/products', methods=['GET', 'POST'])
 @login_required('admin')

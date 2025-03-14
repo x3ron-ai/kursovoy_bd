@@ -57,6 +57,14 @@ CREATE TABLE logs (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    session_code VARCHAR(128) UNIQUE NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
+
+
 -- Представление (без изменений)
 CREATE VIEW order_summary AS
     SELECT o.id, o.status, o.total_price, o.created_at, u.name AS customer

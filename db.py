@@ -2,8 +2,11 @@ import os
 import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
-
+import subprocess
 load_dotenv()
+
+def load_db_dump():
+	subprocess.run( ["pg_dump", "-U", os.getenv('DB_USER'), "-d", os.getenv('DB_NAME'), "-F", "p", "-f", 'backup.dump'], check=True)
 
 def get_db_connection():
 	return psycopg2.connect(
@@ -22,6 +25,23 @@ def get_user_by_email(email):
 	cur.close()
 	conn.close()
 	return result
+
+def get_all_users():
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("SELECT id, name, email, role FROM users")
+	users = cur.fetchall()
+	cur.close()
+	conn.close()
+	return users
+
+def delete_user(user_id):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+	conn.commit()
+	cur.close()
+	conn.close()
 
 def create_user(name, email, password, role):
 	conn = get_db_connection()
@@ -321,3 +341,33 @@ def get_logs(action_filter=''):
 	cur.close()
 	conn.close()
 	return result
+
+def create_session(user_id, session_code):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute(
+		"INSERT INTO sessions (user_id, session_code, created_at) VALUES (%s, %s, %s) RETURNING id",
+		(user_id, session_code, datetime.now())
+	)
+	session_id = cur.fetchone()[0]
+	conn.commit()
+	cur.close()
+	conn.close()
+	return session_id
+
+def get_session_by_code(session_code):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("SELECT user_id FROM sessions WHERE session_code = %s", (session_code,))
+	result = cur.fetchone()
+	cur.close()
+	conn.close()
+	return result[0] if result else None
+
+def delete_session(session_code):
+	conn = get_db_connection()
+	cur = conn.cursor()
+	cur.execute("DELETE FROM sessions WHERE session_code = %s", (session_code,))
+	conn.commit()
+	cur.close()
+	conn.close()

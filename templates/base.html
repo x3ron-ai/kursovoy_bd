@@ -10,13 +10,13 @@
 		<header>
 			<span>Система управления заказами</span>
 			{% if session.user_id %}
-				{% if session.role == 'customer' %}
+				{% if session['role'] == 'customer' %}
 					<a href="{{ url_for('customer_profile') }}">Профиль</a>
-				{% elif session.role == 'admin' %}
+				{% elif session['role'] == 'admin' %}
 					<a href="{{ url_for('admin_panel') }}">Панель администратора</a>
 				{% elif session.role == 'seller' %}
 					<a href="{{ url_for('seller_profile') }}">Профиль продавца</a>
-				{% elif session.role == 'courier' %}
+				{% elif session['role'] == 'courier' %}
 					<a href="{{ url_for('courier_orders') }}">Страница курьера</a>
 				{% endif %}
 				<a href="{{ url_for('logout') }}">Выход</a>
